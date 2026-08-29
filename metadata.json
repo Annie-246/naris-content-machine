@@ -1,0 +1,10 @@
+{
+  "name": "Naris Content Machine",
+  "description": "AI-powered viral content analyzer, script remake engine & copywriter for Parasola by Naris Up Japan with light theme, deep analysis tables, and strict brand DNA rules.",
+  "requestFramePermissions": [
+    "display-capture"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
