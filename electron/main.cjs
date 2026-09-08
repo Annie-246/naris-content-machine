@@ -32,7 +32,12 @@ const SERVER_POLL_MS = 200;
 // mở app lại là một origin khác, và người dùng thấy toàn bộ dữ liệu của mình
 // biến mất dù không ai xoá gì. Vì vậy ở đây thử một dải cổng cố định trước, chỉ
 // khi cả dải đều bận mới rơi về cổng ngẫu nhiên.
-const PREFERRED_PORTS = [41337, 41338, 41339, 41340, 41341];
+//
+// Dải này phải khác dải của Content Machine gốc (41337+): hai app cùng chạy
+// trên một máy mà dùng chung dải thì app nào mở trước chiếm cổng trước, và vì
+// localStorage gắn với origin http://127.0.0.1:<cổng>, Brand DNA cùng key tích
+// hợp của hai app sẽ tráo cho nhau tuỳ thứ tự mở.
+const PREFERRED_PORTS = [41437, 41438, 41439, 41440, 41441];
 
 /** True nếu cổng này đang trống. */
 const canListen = (port) =>
