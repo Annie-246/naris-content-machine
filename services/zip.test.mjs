@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, writeFile, readFile, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { zipFiles, crc32 } from './zip.mjs';
@@ -33,6 +33,8 @@ const expandArchive = async (zipPath, destination) => {
   // Với archive rỗng, unzip in cảnh báo "zipfile is empty" rồi thoát với mã 1
   // dù file đúng chuẩn. Bài kiểm tra archive rỗng cần chạy tiếp qua trường hợp
   // đó, còn archive có nội dung vẫn được kiểm bằng chính nội dung giải nén ra.
+  // Expand-Archive tự tạo thư mục đích, unzip chỉ tạo khi có file để bung ra.
+  await mkdir(destination, { recursive: true });
   try {
     await execFileAsync('unzip', ['-o', zipPath, '-d', destination], { timeout: 60_000 });
   } catch (err) {
