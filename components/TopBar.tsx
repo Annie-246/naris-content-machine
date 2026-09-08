@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ShieldCheck, Check, Aperture } from 'lucide-react';
+import { ChevronDown, ShieldCheck, Check, Aperture, Plus, Menu } from 'lucide-react';
 import { BrandProfile } from '../types';
 
 export const TopBar = ({
@@ -7,11 +7,16 @@ export const TopBar = ({
   brandList,
   onSelectBrand,
   onManageBrand,
+  onAddBrand,
+  onOpenMenu,
 }: {
   activeBrand: BrandProfile;
   brandList: BrandProfile[];
   onSelectBrand: (id: string) => void;
   onManageBrand: () => void;
+  onAddBrand: () => void;
+  // Chỉ dùng ở màn hình hẹp, nơi sidebar nằm ngoài màn hình.
+  onOpenMenu?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -26,20 +31,31 @@ export const TopBar = ({
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
-      <div className="flex items-center justify-between gap-4 px-10 py-4">
-        <div className="relative" ref={wrapRef}>
+    <header className="sticky top-0 z-30 bg-[#A4145E] border-b border-[#86104D]">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 lg:gap-4 lg:px-10 lg:py-4">
+        <button
+          onClick={onOpenMenu}
+          className="lg:hidden shrink-0 p-2.5 rounded-xl border border-white/60 text-white hover:bg-white/10 transition-colors"
+          aria-label="Mở menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="relative min-w-0 flex-1 lg:flex-none" ref={wrapRef}>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center gap-3 pl-4 pr-4 py-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors min-w-[340px]"
+            className="w-full lg:w-auto inline-flex items-center gap-3 px-3 lg:px-4 py-2.5 rounded-xl bg-transparent border border-white/60 hover:bg-white/10 transition-colors lg:min-w-[340px] group"
           >
-            <span className="w-6 h-6 rounded-full bg-[#fdeef3] flex items-center justify-center shrink-0">
-              <Aperture className="w-4 h-4 text-[#e4004f]" />
+            <Aperture className="w-[18px] h-[18px] text-white shrink-0" />
+            <span className="flex-1 text-left min-w-0">
+              <span className="block text-[11px] uppercase tracking-wide text-white/70 font-semibold leading-tight">
+                Thương hiệu · bấm để đổi
+              </span>
+              <span className="block text-[15px] font-bold text-white truncate leading-tight">
+                {activeBrand.name}
+              </span>
             </span>
-            <span className="flex-1 text-left text-[15px] font-medium text-slate-900 truncate">
-              {activeBrand.name}
-            </span>
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-white/70 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
 
           {open && (
@@ -59,19 +75,29 @@ export const TopBar = ({
                       <span className="block text-xs text-slate-500 truncate">{brand.industry}</span>
                     )}
                   </span>
-                  {brand.id === activeBrand.id && <Check className="w-4 h-4 text-[#e4004f] shrink-0" />}
+                  {brand.id === activeBrand.id && <Check className="w-4 h-4 text-[#A4145E] shrink-0" />}
                 </button>
               ))}
+              <button
+                onClick={() => {
+                  onAddBrand();
+                  setOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-t border-slate-100 hover:bg-slate-50 transition-colors"
+              >
+                <Plus className="w-4 h-4 text-[#A4145E] shrink-0" />
+                <span className="text-sm font-medium text-[#A4145E]">Thêm thương hiệu mới</span>
+              </button>
             </div>
           )}
         </div>
 
         <button
           onClick={onManageBrand}
-          className="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl border border-[#e4004f] text-[#e4004f] font-medium hover:bg-[#fdeef3] transition-colors"
+          className="shrink-0 inline-flex items-center gap-2.5 px-3 lg:px-5 py-2.5 lg:py-3 rounded-xl bg-transparent border border-white/60 text-white font-semibold hover:bg-white/10 transition-colors"
         >
           <ShieldCheck className="w-[18px] h-[18px]" />
-          Quản lý Brand
+          <span className="hidden sm:inline">Quản lý Brand</span>
         </button>
       </div>
     </header>

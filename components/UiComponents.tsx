@@ -22,7 +22,7 @@ export const Button = ({
   const baseStyle = "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500";
   
   const variants = {
-    primary: "bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-700 text-white shadow-md shadow-pink-500/20 border border-pink-400/30 active:scale-[0.98]",
+    primary: "bg-gradient-to-r from-pink-500 via-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-md shadow-pink-500/20 border border-pink-400/30 active:scale-[0.98]",
     secondary: "bg-pink-50 hover:bg-pink-100 text-pink-900 border border-pink-200 active:scale-[0.98]",
     ghost: "bg-transparent hover:bg-pink-50 text-slate-700 hover:text-pink-900",
     outline: "bg-white border border-pink-300 text-pink-800 hover:border-pink-500 hover:bg-pink-50/50"
@@ -64,12 +64,12 @@ export const FeatureCard = ({
     case AnalysisMode.CONTENT_AUDIT:
       icon = Newspaper;
       title = "Remake Bài Viết Social";
-      desc = "Từ Text/Link/Ảnh/Audio -> Bài post Facebook/Threads chuẩn giọng Parasola.";
+      desc = "Từ Text/Link/Ảnh/Audio -> Bài post Facebook/Threads chuẩn giọng thương hiệu.";
       break;
     case AnalysisMode.SCRIPT_GENERATION:
       icon = Clapperboard;
       title = "Tạo Script Từ Ý Tưởng";
-      desc = "Từ ý tưởng nháp thô -> Kịch bản viral TikTok/Shorts chuẩn Parasola.";
+      desc = "Từ ý tưởng nháp thô -> Kịch bản viral TikTok/Shorts chuẩn thương hiệu.";
       break;
     case AnalysisMode.DEEP_ANALYSIS:
       icon = ScanEye;
@@ -91,13 +91,13 @@ export const FeatureCard = ({
       className={`
         relative overflow-hidden group p-4 rounded-xl border text-left transition-all duration-200 w-full h-full
         ${active 
-          ? 'bg-gradient-to-br from-pink-50 to-rose-50 border-pink-400 shadow-md shadow-pink-500/10 ring-2 ring-pink-400/40' 
+          ? 'bg-gradient-to-br from-pink-50 to-pink-50 border-pink-400 shadow-md shadow-pink-500/10 ring-2 ring-pink-400/40' 
           : 'bg-white border-pink-100 hover:border-pink-300 hover:bg-pink-50/40 shadow-sm'}
         ${disabled ? 'opacity-35 cursor-not-allowed grayscale' : ''}
       `}
     >
       <div className="flex items-start justify-between mb-2.5">
-        <div className={`p-2.5 rounded-xl inline-block ${active ? 'bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-md shadow-pink-500/25' : 'bg-pink-50 text-pink-700 group-hover:text-pink-900 border border-pink-200'}`}>
+        <div className={`p-2.5 rounded-xl inline-block ${active ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white shadow-md shadow-pink-500/25' : 'bg-pink-50 text-pink-700 group-hover:text-pink-900 border border-pink-200'}`}>
           <IconComponent className="w-5 h-5" />
         </div>
         {badge && (
@@ -107,7 +107,7 @@ export const FeatureCard = ({
         )}
       </div>
 
-      <h3 className={`font-bold text-sm mb-1 ${active ? 'text-rose-950' : 'text-slate-900'}`}>{title}</h3>
+      <h3 className={`font-bold text-sm mb-1 ${active ? 'text-pink-950' : 'text-slate-900'}`}>{title}</h3>
       <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{desc}</p>
       
       {active && (
@@ -162,7 +162,7 @@ export const FileDropzone = ({
             {currentFile ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
           </div>
           <div className="text-left overflow-hidden">
-             <p className={`text-sm font-medium truncate ${currentFile ? 'text-rose-950 font-semibold' : 'text-slate-700'}`}>
+             <p className={`text-sm font-medium truncate ${currentFile ? 'text-pink-950 font-semibold' : 'text-slate-700'}`}>
                {currentFile ? currentFile.name : label}
              </p>
              <p className="text-xs text-slate-500">{currentFile ? 'Đã tải lên thành công' : 'Định dạng PNG, JPG, WEBP'}</p>
@@ -197,7 +197,7 @@ export const FileDropzone = ({
                <FileImage className="w-7 h-7" />}
             </div>
             <div>
-              <p className="text-rose-950 font-bold text-sm truncate max-w-xs">{currentFile.name}</p>
+              <p className="text-pink-950 font-bold text-sm truncate max-w-xs">{currentFile.name}</p>
               <p className="text-xs text-slate-500 mt-0.5">{(currentFile.size / (1024 * 1024)).toFixed(2)} MB</p>
             </div>
             <p className="text-xs text-pink-800 bg-pink-50 font-medium px-3 py-1 rounded-full mt-1 border border-pink-200">

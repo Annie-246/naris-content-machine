@@ -28,7 +28,9 @@ import {
   ArrowRight,
   ArrowLeft,
   FileImage,
-  UploadCloud
+  UploadCloud,
+  ClipboardPaste,
+  ClipboardList,
 } from 'lucide-react';
 import { 
   AnalysisMode, 
@@ -39,20 +41,35 @@ import {
   FORMULA_LABELS,
   VideoMeta
 } from './types';
-import { DEFAULT_BRAND_PRESETS, STORAGE_KEY_BRAND_PROFILES, STORAGE_KEY_ACTIVE_BRAND } from './data/brandPresets';
+import {
+  STORAGE_KEY_BRAND_PROFILES, STORAGE_KEY_ACTIVE_BRAND, createBlankBrand, DEFAULT_BRAND_PRESETS,
+} from './data/brandPresets';
 import { analyzeContent, fileToGenerativePart, generateRemakeThumbnail } from './services/geminiService';
+import { loadLinkSource } from './services/sourceLoader';
 import { Button, FileDropzone } from './components/UiComponents';
 import { BrandProfileModal } from './components/BrandProfileModal';
 import { BrandSelectorBanner } from './components/BrandSelectorBanner';
 import { Sidebar, SidebarView } from './components/Sidebar';
+import { ContentRadar } from './components/ContentRadar';
+import { ContentWaterfall } from './components/ContentWaterfall';
 import { TopBar } from './components/TopBar';
 import { FeatureLauncher } from './components/FeatureLauncher';
+import { FeatureRail } from './components/FeatureRail';
+import { useResizablePanel } from './components/PanelChrome';
+import { WorkflowStepper, SectionCard, RunStatus } from './components/WorkspaceShell';
+import { getFeature } from './data/features';
 import { IntegrationsPanel } from './components/IntegrationsPanel';
+import { ChecklistModal } from './components/ChecklistModal';
+import { listChecklistsFor, getChecklist } from './services/checklistStore';
+import { OverviewIntro } from './components/OverviewIntro';
 import { getGeminiApiKey } from './services/apiKeyStore';
 import { postJson } from './services/apiClient';
 import { exportToExcelCsv, openInGoogleSheets } from './src/utils/exportUtils';
+import { HistoryPanel } from './components/HistoryPanel';
+import { purgeExpired, requestPersistence, dataUrlToBlob, type HistoryKind } from './services/historyStore';
+import { recordAndBackup } from './services/historyBackup';
 
-type AppView = 'overview' | 'features' | 'workspace' | 'integrations';
+type AppView = 'overview' | 'radar' | 'waterfall' | 'features' | 'workspace' | 'history' | 'integrations';
 
 const FEATURE_TITLES: Partial<Record<AnalysisMode, string>> = {
   [AnalysisMode.REMAKE_SCRIPT]: 'Remake kịch bản video',
@@ -60,23 +77,35 @@ const FEATURE_TITLES: Partial<Record<AnalysisMode, string>> = {
   [AnalysisMode.SCRIPT_EXTRACT]: 'Trích script video',
   [AnalysisMode.SCRIPT_GENERATION]: 'Tạo kịch bản từ ý tưởng',
   [AnalysisMode.CONTENT_AUDIT]: 'Remake bài viết',
+  [AnalysisMode.ARTICLE_WRITING]: 'Viết bài',
   [AnalysisMode.ARTICLE_ANALYSIS]: 'Phân tích sâu bài viết',
   [AnalysisMode.THUMBNAIL_AUDIT]: 'Tạo hình ảnh',
   [AnalysisMode.VIDEO_SCORING]: 'Chấm điểm nội dung video',
   [AnalysisMode.ARTICLE_SCORING]: 'Chấm điểm nội dung bài viết',
 };
 
-// Links we can download server-side with yt-dlp.
-const SOCIAL_LINK_RE = /(youtube\.com|youtu\.be|tiktok\.com|facebook\.com|fb\.watch|instagram\.com|x\.com|twitter\.com|threads\.net)/i;
-
-// Modes that expose the script formula picker.
-const FORMULA_MODES = [AnalysisMode.REMAKE_SCRIPT, AnalysisMode.SCRIPT_GENERATION];
+// Tên tính năng lấy từ catalogue khi bảng trên chưa khai báo, để thêm mode mới
+// không còn rơi vào một tiêu đề mặc định sai như trước.
+const featureTitle = (mode: AnalysisMode): string =>
+  FEATURE_TITLES[mode] || getFeature(mode)?.title || 'Kết quả';
 
 type SourceKind = 'link' | 'upload' | 'screen' | 'text' | 'images';
 
 interface FeatureConfig {
   subtitle: string;
   sources: SourceKind[];
+  /**
+   * Cách đọc một link dán vào.
+   *
+   * Trước đây suy từ `sources`: có 'upload' thì tải video, không thì đọc chữ.
+   * Suy như vậy sai với những tính năng nhận cả hai loại nguồn - Remake bài viết
+   * dán link TikTok vào thì chỉ đọc được caption, model không xem được video và
+   * quay ra bịa nội dung. Nên chế độ đọc phải khai báo thẳng.
+   *  - 'video': luôn tải file (tính năng chỉ làm việc với video)
+   *  - 'text' : luôn đọc chữ (tính năng chỉ làm việc với bài viết)
+   *  - 'auto' : link mạng xã hội thì thử tải video trước, hỏng thì đọc chữ
+   */
+  linkMode?: 'video' | 'text' | 'auto';
   sourceLabel: string;
   sourceHint: string;
   linkPlaceholder?: string;
@@ -108,7 +137,7 @@ const FEATURE_CONFIG: Partial<Record<AnalysisMode, FeatureConfig>> = {
     uploadLabel: 'Hoặc kéo thả file video vào đây',
   },
   [AnalysisMode.SCRIPT_EXTRACT]: {
-    subtitle: 'Trích xuất nguyên văn lời thoại kèm mốc thời gian từ video.',
+    subtitle: 'Trích xuất nguyên văn lời thoại kèm mốc thời gian. Video tiếng nước ngoài sẽ có thêm cột bản dịch tiếng Việt.',
     sources: ['link', 'upload'],
     sourceLabel: 'Video cần trích script',
     sourceHint: 'Link hoặc file video, audio',
@@ -117,23 +146,41 @@ const FEATURE_CONFIG: Partial<Record<AnalysisMode, FeatureConfig>> = {
     uploadLabel: 'Hoặc kéo thả video, audio vào đây',
   },
   [AnalysisMode.SCRIPT_GENERATION]: {
-    subtitle: 'Từ ý tưởng thô thành kịch bản video hoàn chỉnh theo công thức bạn chọn.',
-    sources: ['text'],
+    subtitle: 'Từ ý tưởng thô hoặc một bài viết có sẵn thành kịch bản video hoàn chỉnh theo công thức bạn chọn.',
+    sources: ['link', 'text'],
     sourceLabel: 'Ý tưởng của bạn',
-    sourceHint: 'Chỉ cần mô tả ý tưởng',
-    textLabel: 'Ý tưởng / bản nháp thô:',
+    sourceHint: 'Ý tưởng, link bài viết hoặc blog',
+    linkPlaceholder: 'Dán link bài viết, blog hoặc bài đăng để lấy làm chất liệu...',
+    textLabel: 'Ý tưởng / bản nháp thô (bỏ trống được nếu đã dán link):',
     textPlaceholder: 'VD: Mình muốn làm video về 3 sai lầm chống nắng khiến da sạm đi...',
     actionLabel: 'Tạo kịch bản viral',
   },
   [AnalysisMode.CONTENT_AUDIT]: {
-    subtitle: 'Viết lại bài viết hiện có thành phiên bản mới chuẩn giọng văn thương hiệu.',
-    sources: ['link', 'text', 'images'],
-    sourceLabel: 'Bài viết gốc',
-    sourceHint: 'Link, text hoặc ảnh chụp bài',
-    linkPlaceholder: 'Dán link bài viết gốc (Facebook, Threads, blog...)',
-    textLabel: 'Nội dung bài viết gốc:',
+    subtitle: 'Viết lại nội dung có sẵn - bài viết, video hoặc audio - bằng giọng văn thương hiệu, giữ đúng nội dung gốc.',
+    sources: ['link', 'upload', 'text', 'images'],
+    linkMode: 'auto',
+    sourceLabel: 'Nội dung gốc',
+    sourceHint: 'Link, video, audio, text hoặc ảnh chụp bài',
+    linkPlaceholder: 'Dán link bài viết hoặc link video (Facebook, Threads, blog, TikTok, YouTube...)',
+    textLabel: 'Nội dung gốc (bỏ trống được nếu đã dán link hoặc tải file):',
     textPlaceholder: 'Dán nội dung bài viết cần remake vào đây...',
-    actionLabel: 'Remake bài viết chuẩn thương hiệu',
+    actionLabel: 'Remake thành bài đăng chuẩn thương hiệu',
+    uploadLabel: 'Hoặc kéo thả video, audio cần chuyển thành bài viết',
+  },
+  [AnalysisMode.ARTICLE_WRITING]: {
+    subtitle: 'Từ vài dòng ý tưởng, hoặc từ một link bài viết / video có sẵn, thành bài viết hoàn chỉnh đúng giọng thương hiệu.',
+    sources: ['link', 'upload', 'text', 'images'],
+    // Link video thì phải tải video về cho model xem. Trước đây tính năng này
+    // đọc link dạng chữ, nên dán link TikTok kể case study vào chỉ lấy được
+    // caption vài dòng rồi model viết bừa cho đủ bài.
+    linkMode: 'auto',
+    sourceLabel: 'Ý tưởng hoặc nguồn gốc',
+    sourceHint: 'Ý tưởng thô, link bài viết / video, file hoặc ảnh',
+    linkPlaceholder: 'Dán link bài viết hoặc video (Facebook, TikTok, YouTube, Reels, blog...) - AI tải về, đọc kỹ rồi viết bám theo nội dung đó',
+    textLabel: 'Ý tưởng / yêu cầu cho bài viết (bỏ trống được nếu đã dán link - khi đó AI viết bám đúng nội dung trong link):',
+    textPlaceholder: 'VD: Muốn viết bài chia sẻ về việc nhiều shop chạy ads mà không ra đơn, nguyên nhân thật nằm ở sản phẩm chứ không phải ngân sách...',
+    actionLabel: 'Viết bài kèm hook gợi ý',
+    uploadLabel: 'Hoặc kéo thả file video, audio để AI xem rồi viết bài từ đó',
   },
   [AnalysisMode.ARTICLE_ANALYSIS]: {
     subtitle: 'Mổ xẻ một bài viết hay để hiểu vì sao nó hiệu quả. Chỉ phân tích, không chấm điểm và không viết lại.',
@@ -154,33 +201,48 @@ const FEATURE_CONFIG: Partial<Record<AnalysisMode, FeatureConfig>> = {
     available: false,
   },
   [AnalysisMode.VIDEO_SCORING]: {
-    subtitle: 'Chấm điểm video theo bộ tiêu chí của thương hiệu.',
-    sources: [],
-    sourceLabel: 'Nguồn video',
-    sourceHint: '',
-    actionLabel: 'Chấm điểm nội dung',
-    available: false,
+    subtitle: 'Chấm điểm video theo bộ tiêu chí bạn tự nạp, hoặc theo Brand DNA nếu chưa có bộ nào.',
+    sources: ['link', 'upload'],
+    sourceLabel: 'Video cần chấm',
+    sourceHint: 'Link hoặc file video',
+    linkPlaceholder: 'Dán link video TikTok, YouTube, Reels, Facebook...',
+    actionLabel: 'Chấm điểm video',
+    uploadLabel: 'Hoặc kéo thả file video vào đây',
   },
   [AnalysisMode.ARTICLE_SCORING]: {
-    subtitle: 'Chấm điểm bài viết theo bộ tiêu chí của thương hiệu.',
-    sources: [],
-    sourceLabel: 'Nguồn bài viết',
-    sourceHint: '',
-    actionLabel: 'Chấm điểm nội dung',
-    available: false,
+    subtitle: 'Chấm điểm bài viết theo bộ tiêu chí bạn tự nạp, hoặc theo Brand DNA nếu chưa có bộ nào.',
+    sources: ['link', 'text', 'images'],
+    sourceLabel: 'Nội dung cần chấm',
+    sourceHint: 'Link, text hoặc ảnh chụp bài',
+    linkPlaceholder: 'Dán link bài viết, Google Docs, PDF hoặc bài đăng mạng xã hội...',
+    textLabel: 'Nội dung cần chấm điểm:',
+    textPlaceholder: 'Dán nội dung vào đây. Có thể bỏ trống nếu đã dán link hoặc tải ảnh chụp.',
+    actionLabel: 'Chấm điểm bài viết',
   },
 };
+
+// Giá trị đệm khi danh sách brand rỗng - lúc đó giao diện wizard được hiển thị thay thế.
+// Mở app là vào thẳng chỗ làm việc.
+//
+// Trước đây lần đầu mở app dựng lên một màn hình chào bắt tạo Brand DNA mới cho
+// đi tiếp. Người dùng mới chưa biết app làm được gì đã phải khai báo thương hiệu,
+// nên giờ app tự lập sẵn một hồ sơ trống mang tên dưới đây và mở thẳng màn hình
+// chính; ai muốn khai báo thì vào Brand DNA sửa lại, ngay trên thanh trên cùng.
+const DEFAULT_BRAND_NAME = 'Thương hiệu của tôi';
+
+const PLACEHOLDER_BRAND: BrandProfile = createBlankBrand('');
 
 const App = () => {
   // Brand Management State
   const [brandList, setBrandList] = useState<BrandProfile[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_BRAND_PROFILES);
-      if (saved) return JSON.parse(saved);
+      const parsed = saved ? JSON.parse(saved) : null;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch (e) {
       console.error("Error reading saved brand profiles", e);
     }
-    return DEFAULT_BRAND_PRESETS;
+    return DEFAULT_BRAND_PRESETS.length ? DEFAULT_BRAND_PRESETS : [createBlankBrand(DEFAULT_BRAND_NAME)];
   });
 
   const [activeBrandId, setActiveBrandId] = useState<string>(() => {
@@ -190,7 +252,7 @@ const App = () => {
     } catch (e) {
       console.error("Error reading active brand id", e);
     }
-    return DEFAULT_BRAND_PRESETS[0].id;
+    return '';
   });
 
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
@@ -198,11 +260,22 @@ const App = () => {
   // Screenshots of the article being analysed - multiple images allowed.
   const [articleImages, setArticleImages] = useState<{ file: File; previewUrl: string; base64: string; mimeType: string }[]>([]);
 
-  // Shell navigation: the launcher screen opens a feature, which reveals the workspace.
-  const [view, setView] = useState<AppView>('features');
-  const [sidebarActive, setSidebarActive] = useState<SidebarView>('features');
+  // Shell navigation: mở app là vào Tổng quan, từ đó người dùng tự chọn đi tiếp.
+  const [view, setView] = useState<AppView>('overview');
+  const [sidebarActive, setSidebarActive] = useState<SidebarView>('overview');
+  // Trên điện thoại sidebar nằm ngoài màn hình, mở ra bằng nút menu ở thanh trên.
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  const activeBrand: BrandProfile = brandList.find(b => b.id === activeBrandId) || brandList[0] || DEFAULT_BRAND_PRESETS[0];
+  // Hai thanh hai bên kéo rộng hẹp được và thu gọn được về dải icon. Máy màn
+  // hình nhỏ mở lần đầu thì chúng tự thu lại, nhường chỗ cho phần làm việc.
+  const sidebarPanel = useResizablePanel({
+    storageKey: 'cm.panel.sidebar', min: 208, max: 420, initial: 300, side: 'left', collapseBelow: 1280,
+  });
+  const railPanel = useResizablePanel({
+    storageKey: 'cm.panel.rail', min: 288, max: 520, initial: 380, side: 'right', collapseBelow: 1440,
+  });
+
+  const activeBrand: BrandProfile = brandList.find(b => b.id === activeBrandId) || brandList[0] || PLACEHOLDER_BRAND;
 
   // Analysis & Workflow State
   const [fileData, setFileData] = useState<FileData | null>(null);
@@ -212,11 +285,57 @@ const App = () => {
   const [error, setError] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  // Comments carry the objections and questions a caption never admits to, so
+  // they are worth reading - but only when the run is about the audience rather
+  // than about the post itself.
+  const [readComments, setReadComments] = useState(true);
   const [customUserPrompt, setCustomUserPrompt] = useState('');
   const [userInstructions, setUserInstructions] = useState('');
   const [selectedFormula, setSelectedFormula] = useState<ScriptFormula>('auto');
+  // Bộ tiêu chí chấm điểm đang chọn. Rỗng nghĩa là chấm theo Brand DNA và bộ
+  // tiêu chí chuẩn của app.
+  const [selectedChecklistId, setSelectedChecklistId] = useState('');
+  const [isChecklistOpen, setIsChecklistOpen] = useState(false);
+  const [checklistVersion, setChecklistVersion] = useState(0);
+
 
   const featureConfig = FEATURE_CONFIG[selectedMode] || FEATURE_CONFIG[AnalysisMode.REMAKE_SCRIPT]!;
+
+  // checklistVersion đổi mỗi khi người dùng sửa kho, để danh sách này đọc lại.
+  const availableChecklists = React.useMemo(
+    () => listChecklistsFor(selectedMode === AnalysisMode.VIDEO_SCORING ? 'video' : 'article'),
+    [selectedMode, checklistVersion],
+  );
+  const activeFeature = getFeature(selectedMode);
+  const ActiveFeatureIcon = activeFeature.icon;
+
+  // Which stage of the 1-2-3 bar to light up.
+  const hasSource = !!fileData || !!customUserPrompt.trim() || articleImages.length > 0;
+  const currentStep = result ? 3 : hasSource ? 2 : 1;
+
+  // A long job used to look like a hang. The status panel counts from here.
+  const [sheetHint, setSheetHint] = useState('');
+  const [pastedCount, setPastedCount] = useState(0);
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
+  useEffect(() => {
+    setRunStartedAt(loading.isLoading ? Date.now() : null);
+  }, [loading.isLoading]);
+
+  // Listening on the window means the paste works wherever the caret happens to
+  // be, not only inside the drop box.
+  const acceptsImages = featureConfig.sources.includes('images');
+  useEffect(() => {
+    if (view !== 'workspace' || !acceptsImages) return;
+    const onPaste = (event: ClipboardEvent) => {
+      if (takeImagesFromClipboard(event.clipboardData)) event.preventDefault();
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [view, acceptsImages]);
+
+  const runExpectation = fileData?.fileUri || fileData?.videoMeta
+    ? 'Video dài có thể mất 1-3 phút. Cứ để tab này mở.'
+    : 'Thường mất 20-60 giây. Cứ để tab này mở.';
   
   // Thumbnail Remake State
   const [userAssetData, setUserAssetData] = useState<FileData | null>(null);
@@ -254,6 +373,42 @@ const App = () => {
     };
   }, [screenStream]);
 
+  // Lịch sử nội dung: dọn dữ liệu hết hạn ngay khi mở app.
+  //
+  // A browser tab has no background job, so start-up is the only moment the
+  // promise "text goes after 7 days, images after 3" can actually be kept.
+  useEffect(() => {
+    purgeExpired();
+    requestPersistence();
+  }, []);
+
+  /**
+   * Files a finished result into the local history, then hands it to Drive.
+   *
+   * Deliberately not awaited by the callers: saving must never delay the result
+   * appearing on screen, and a failed save is logged inside the store rather
+   * than surfaced as an error on a run that actually succeeded.
+   */
+  const recordHistory = (input: {
+    kind: HistoryKind;
+    html?: string;
+    title?: string;
+    sourceUrl?: string;
+    assets?: { name: string; mimeType: string; blob: Blob }[];
+  }) => {
+    recordAndBackup({
+      brandId: activeBrand.id,
+      brandName: activeBrand.name,
+      kind: input.kind,
+      mode: selectedMode,
+      modeLabel: featureTitle(selectedMode),
+      title: input.title,
+      html: input.html,
+      sourceUrl: input.sourceUrl,
+      assets: input.assets,
+    });
+  };
+
   const handleSaveBrandProfile = (updatedBrand: BrandProfile) => {
     setBrandList(prev => {
       const index = prev.findIndex(b => b.id === updatedBrand.id);
@@ -267,15 +422,33 @@ const App = () => {
     setActiveBrandId(updatedBrand.id);
   };
 
-  const handleSelectPreset = (presetId: string) => {
-    const existing = brandList.find(b => b.id === presetId);
-    if (!existing) {
-      const template = DEFAULT_BRAND_PRESETS.find(b => b.id === presetId);
-      if (template) {
-        setBrandList(prev => [...prev, template]);
+  // Thêm một brand mới rỗng rồi mở luôn form Brand DNA để điền.
+  const handleAddBrand = () => {
+    const fresh = createBlankBrand('');
+    setBrandList(prev => [...prev, fresh]);
+    setActiveBrandId(fresh.id);
+    setIsBrandModalOpen(true);
+  };
+
+  // Nhận brand từ file JSON: trùng id thì ghi đè, chưa có thì thêm mới.
+  const handleImportBrand = (brand: BrandProfile) => {
+    setBrandList(prev => {
+      const index = prev.findIndex(b => b.id === brand.id);
+      if (index >= 0) {
+        const next = [...prev];
+        next[index] = brand;
+        return next;
       }
-    }
-    setActiveBrandId(presetId);
+      return [...prev, brand];
+    });
+    setActiveBrandId(brand.id);
+  };
+
+  const handleDeleteBrand = (brandId: string) => {
+    const remaining = brandList.filter(b => b.id !== brandId);
+    const next = remaining.length > 0 ? remaining : [createBlankBrand(DEFAULT_BRAND_NAME)];
+    setBrandList(next);
+    if (brandId === activeBrandId) setActiveBrandId(next[0].id);
   };
 
   const handleFileSelect = async (file: File) => {
@@ -292,14 +465,20 @@ const App = () => {
       return;
     }
 
-    const type = file.type.startsWith('video') ? 'video' : 
+    const type = file.type.startsWith('video') ? 'video' :
                  file.type.startsWith('audio') ? 'audio' : 'image';
-    
-    if (type === 'image') {
-      setSelectedMode(AnalysisMode.CONTENT_AUDIT);
-    } else if (type === 'audio') {
-      if (selectedMode !== AnalysisMode.CONTENT_AUDIT && selectedMode !== AnalysisMode.SCRIPT_GENERATION) {
-        setSelectedMode(AnalysisMode.REMAKE_SCRIPT);
+
+    // Tính năng đang mở mà tự nhận file thì giữ nguyên: đang ở "Viết bài" kéo
+    // video vào là muốn viết bài từ video đó, không phải muốn nhảy sang Remake.
+    // Chỉ những tính năng không có ô tải file mới cần đổi sang chỗ xử lý được.
+    const acceptsUpload = FEATURE_CONFIG[selectedMode]?.sources.includes('upload');
+    if (!acceptsUpload) {
+      if (type === 'image') {
+        setSelectedMode(AnalysisMode.CONTENT_AUDIT);
+      } else if (type === 'audio') {
+        if (selectedMode !== AnalysisMode.CONTENT_AUDIT && selectedMode !== AnalysisMode.SCRIPT_GENERATION) {
+          setSelectedMode(AnalysisMode.REMAKE_SCRIPT);
+        }
       }
     }
 
@@ -425,6 +604,7 @@ const App = () => {
             selectedFormula
           );
           setResult(responseText);
+          recordHistory({ kind: 'analysis', html: responseText });
           setTimeout(() => {
             resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 100);
@@ -474,150 +654,78 @@ const App = () => {
     }
   };
 
+  // Reads whatever text sits behind a link - a Facebook or X post, a Threads
+  // thread, an article - so the model works from the real wording instead of
+  // being told to look the link up on the web.
   const handleUrlFetch = async () => {
     if (!urlInput.trim()) return;
 
-    const isSocialLink = SOCIAL_LINK_RE.test(urlInput);
-
-    // Article modes keep a plain web link as-is, but a social post still gets
-    // downloaded so the AI can actually see it instead of guessing.
-    if ((selectedMode === AnalysisMode.CONTENT_AUDIT || selectedMode === AnalysisMode.ARTICLE_ANALYSIS) && !isSocialLink) {
-      setFileData({
-        file: null,
-        previewUrl: '',
-        type: 'url',
-        base64: '',
-        mimeType: '',
-        url: urlInput
-      });
-      setError('');
-      setResult('');
-      return;
-    }
+    // Only the video features need the file itself; the rest read the page.
+    const linkMode = featureConfig.linkMode
+      || (featureConfig.sources.includes('upload') || featureConfig.sources.includes('screen') ? 'video' : 'text');
+    // Chỉ chế độ thuần video mới dọn sạch nguồn cũ; 'auto' có thể quay về đọc chữ.
+    const wantsVideo = linkMode === 'video';
 
     setLoading({ isLoading: true, message: 'Đang kết nối liên kết...', step: 1 });
     setError('');
     setResult('');
-    setFileData(null);
-    setGeneratedImageUrl('');
-    setUserAssetData(null);
-    stopScreenShare();
+
+    if (wantsVideo) {
+      setFileData(null);
+      setGeneratedImageUrl('');
+      setUserAssetData(null);
+      stopScreenShare();
+    }
 
     try {
-      // A social post can never be fetched from the browser (CORS), so go
-      // straight to the server-side downloader instead of failing first.
-      if (isSocialLink) {
-        setLoading({ isLoading: true, message: 'Đang tải video từ mạng xã hội và đẩy lên Gemini...', step: 1 });
-
-        let payload: any;
-        try {
-          payload = await postJson('/api/fetch-video', { url: urlInput, apiKey: getGeminiApiKey() });
-        } catch (apiError: any) {
-          setError(apiError.message || 'Không tải được video từ link này.');
-          setLoading({ isLoading: false, message: '', step: 0 });
-          return;
-        }
-
-        const meta = payload.meta as VideoMeta;
-        setFileData({
-          file: null,
-          previewUrl: meta.thumbnail || '',
-          type: 'video',
-          base64: '',
-          mimeType: payload.mimeType,
-          url: urlInput,
-          fileUri: payload.fileUri,
-          videoMeta: meta
-        });
-        setLoading({ isLoading: false, message: '', step: 0 });
-        return;
-      }
-
-      let blob: Blob;
-      try {
-        const response = await fetch(urlInput);
-        if (!response.ok) throw new Error('Direct fetch failed');
-        blob = await response.blob();
-      } catch (directError) {
-        try {
-          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(urlInput)}`;
-          const proxyResponse = await fetch(proxyUrl);
-          if (!proxyResponse.ok) throw new Error('Proxy fetch failed');
-          blob = await proxyResponse.blob();
-        } catch (proxyError) {
-          setFileData({
-            file: null,
-            previewUrl: '',
-            type: 'url',
-            base64: '',
-            mimeType: '',
-            url: urlInput
-          });
-          setError("Chuyển sang chế độ đọc Link Web.");
-          setLoading({ isLoading: false, message: '', step: 0 });
-          return;
-        }
-      }
-
-      let mimeType = blob.type;
-      if (!mimeType || mimeType === 'application/octet-stream') {
-        const ext = urlInput.split('.').pop()?.toLowerCase();
-        if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
-        else if (['png'].includes(ext || '')) mimeType = 'image/png';
-        else if (['mov'].includes(ext || '')) mimeType = 'video/quicktime';
-        else if (['mp3', 'wav', 'ogg'].includes(ext || '')) mimeType = 'audio/mpeg';
-        else mimeType = 'video/mp4';
-        blob = blob.slice(0, blob.size, mimeType);
-      }
-
-      const type = mimeType.startsWith('image') ? 'image' : 
-                   mimeType.startsWith('audio') ? 'audio' : 'video';
-
-      const { inlineData } = await fileToGenerativePart(blob);
-      setFileData({
-        file: null,
-        previewUrl: URL.createObjectURL(blob),
-        type,
-        base64: inlineData.data,
-        mimeType: mimeType
+      const { fileData: loaded, warning } = await loadLinkSource(urlInput.trim(), {
+        mode: linkMode,
+        withComments: readComments,
+        onProgress: (message) => setLoading({ isLoading: true, message, step: 1 }),
       });
-
+      setFileData(loaded);
+      if (warning) setError(warning);
     } catch (err: any) {
       console.error(err);
-      setError("Lỗi tải link: " + (err.message || "Vui lòng kiểm tra lại đường dẫn."));
+      setError('Lỗi tải link: ' + (err.message || 'Vui lòng kiểm tra lại đường dẫn.'));
     } finally {
       setLoading({ isLoading: false, message: '', step: 0 });
     }
   };
 
   const handleAnalyze = async () => {
-    const isArticleAnalysis = selectedMode === AnalysisMode.ARTICLE_ANALYSIS;
-    const isTextMode = selectedMode === AnalysisMode.CONTENT_AUDIT || selectedMode === AnalysisMode.SCRIPT_GENERATION || isArticleAnalysis;
+    // Tính năng nào có ô nhập text thì gửi luôn text đó cho model. Trước đây chỗ này
+    // liệt kê tay từng mode nên "Viết bài" và "Chấm điểm bài viết" bị bỏ quên: người
+    // dùng gõ ý tưởng vào ô mà model không nhận được, rồi tự nghĩ ra một chủ đề khác.
+    const isTextMode = featureConfig.sources.includes('text');
 
-    if (!fileData && !isTextMode) {
-      setError("Vui lòng tải lên file Video/Audio/Ảnh hoặc dán link nội dung gốc để phân tích.");
-      return;
-    }
+    const hasPastedText = isTextMode && !!customUserPrompt.trim();
+    const hasScreenshots = featureConfig.sources.includes('images') && articleImages.length > 0;
 
-    // Article analysis accepts any one of: pasted text, a link, or screenshots.
-    if (isArticleAnalysis && !fileData && !customUserPrompt.trim() && articleImages.length === 0) {
-      setError("Vui lòng dán link bài viết, dán nội dung text, hoặc tải lên ảnh chụp bài viết.");
-      return;
-    }
-
-    if (isTextMode && !isArticleAnalysis && !fileData && !customUserPrompt.trim()) {
-      setError("Vui lòng nhập ý tưởng/bản nháp thô hoặc nội dung văn bản gốc.");
+    if (!fileData && !hasPastedText && !hasScreenshots) {
+      const accepted = [
+        featureConfig.sources.includes('link') ? 'dán link' : '',
+        featureConfig.sources.includes('upload') ? 'tải file lên' : '',
+        featureConfig.sources.includes('text') ? 'dán nội dung text' : '',
+        featureConfig.sources.includes('images') ? 'dán hoặc tải ảnh chụp bài viết' : '',
+      ].filter(Boolean).join(', ');
+      setError('Chưa có nguồn nào để chạy. Hãy ' + accepted + '.');
       return;
     }
 
     setLoading({ 
       isLoading: true, 
-      message: `Bước 1: Bóc tách điểm tốt nội dung gốc ➔ Bước 2: Hòa quyện Brand DNA (${activeBrand.name}) ➔ Bước 3: Xuất kịch bản...`,
-      step: 1
+      message: `Bóc tách nội dung gốc ➔ Hòa quyện Brand DNA (${activeBrand.name}) ➔ Xuất kết quả...`,
+      step: 2
     });
     setError('');
     setResult('');
     setGeneratedImageUrl('');
+
+    const attachedImages = [
+      ...(hasScreenshots ? articleImages.map(({ base64, mimeType }) => ({ base64, mimeType })) : []),
+      ...(fileData?.sourceImages || []),
+    ].slice(0, 10);
 
     try {
       const responseText = await analyzeContent(
@@ -626,19 +734,24 @@ const App = () => {
         fileData?.base64 || '',
         fileData?.mimeType || '',
         isTextMode ? customUserPrompt : undefined,
-        undefined,
+        fileData?.sourceText,
         fileData?.url,
         activeBrand,
         userInstructions,
         selectedFormula,
         fileData?.fileUri,
         fileData?.videoMeta,
-        featureConfig.sources.includes('images')
-          ? articleImages.map(({ base64, mimeType }) => ({ base64, mimeType }))
-          : undefined
+        attachedImages.length ? attachedImages : undefined,
+        undefined,
+        selectedChecklistId ? getChecklist(selectedChecklistId)?.criteria : undefined
       );
       setResult(responseText);
-      
+      recordHistory({
+        kind: 'analysis',
+        html: responseText,
+        sourceUrl: fileData?.url || fileData?.videoMeta?.webpageUrl || urlInput.trim() || undefined,
+      });
+
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -667,6 +780,16 @@ const App = () => {
         activeBrand
       );
       setGeneratedImageUrl(generatedImageBase64);
+
+      const imageBlob = dataUrlToBlob(generatedImageBase64);
+      const caption = thumbnailText.trim() || activeBrand.tagline || activeBrand.name;
+      recordHistory({
+        kind: 'image',
+        title: `Thumbnail — ${caption}`.slice(0, 90),
+        html: `<p>Thumbnail remake tỷ lệ ${aspectRatio} cho ${activeBrand.name}.</p><p>Chữ trên ảnh: ${caption}</p>`,
+        assets: imageBlob ? [{ name: 'thumbnail.png', mimeType: imageBlob.type || 'image/png', blob: imageBlob }] : undefined,
+      });
+
       setTimeout(() => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }, 100);
@@ -694,7 +817,7 @@ const App = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const slug = (FEATURE_TITLES[selectedMode] || 'ket-qua').toLowerCase().replace(/\s+/g, '-');
+    const slug = featureTitle(selectedMode).toLowerCase().replace(/\s+/g, '-');
     link.download = `${slug}-${activeBrand.name.toLowerCase().replace(/\s+/g, '-')}.txt`;
     link.click();
     URL.revokeObjectURL(url);
@@ -704,14 +827,21 @@ const App = () => {
     exportToExcelCsv(result, `bang-phan-tich-video-${activeBrand.name.toLowerCase().replace(/\s+/g, '-')}.csv`);
   };
 
-  const handleOpenGoogleSheets = () => {
-    openInGoogleSheets(result);
+  const handleOpenGoogleSheets = async () => {
+    const title = `${featureTitle(selectedMode)} - ${activeBrand.name}`;
+    const copied = await openInGoogleSheets(result, title);
+    // Google offers no way to hand data to a brand-new sheet without the user
+    // authorising the app, so the paste is the one step left to them.
+    setSheetHint(copied
+      ? 'Đã mở Google Sheets mới ở tab khác. Bấm ô A1 rồi Ctrl+V (Cmd+V) để dán kết quả đã định dạng.'
+      : 'Đã mở Google Sheets mới, nhưng trình duyệt chặn sao chép tự động. Dùng nút CSV rồi vào Sheet: Tệp ▸ Nhập ▸ Tải lên.');
+    setTimeout(() => setSheetHint(''), 15000);
   };
 
 
-  const handleArticleImagesSelect = async (files: FileList | null) => {
-    if (!files?.length) return;
-    const picked = Array.from(files).filter((f) => f.type.startsWith('image'));
+  const handleArticleImagesSelect = async (files: FileList | File[] | null) => {
+    if (!files || !files.length) return;
+    const picked = Array.from(files as ArrayLike<File>).filter((f) => f.type.startsWith('image'));
     if (!picked.length) return;
 
     const loaded = await Promise.all(
@@ -727,6 +857,15 @@ const App = () => {
     );
     setArticleImages((prev) => [...prev, ...loaded]);
     setError('');
+  };
+
+  const takeImagesFromClipboard = (data: DataTransfer | null): boolean => {
+    const files = Array.from(data?.files || []).filter((f) => f.type.startsWith('image'));
+    if (!files.length) return false;
+    handleArticleImagesSelect(files);
+    setPastedCount(files.length);
+    window.setTimeout(() => setPastedCount(0), 2500);
+    return true;
   };
 
   const removeArticleImage = (index: number) => {
@@ -764,6 +903,7 @@ const App = () => {
 
   const handleNavigate = (target: SidebarView) => {
     setSidebarActive(target);
+    setIsMobileNavOpen(false);
     switch (target) {
       case 'overview':
         setView('overview');
@@ -771,15 +911,19 @@ const App = () => {
       case 'features':
         setView('features');
         break;
-      // Brand DNA and tone of voice both live in the brand profile modal.
-      case 'brand-dna':
-      case 'voice':
-        setIsBrandModalOpen(true);
+      case 'radar':
+        setView('radar');
         break;
-      // The formula picker only exists inside script modes, so jump there.
-      case 'formula':
-        if (!FORMULA_MODES.includes(selectedMode)) setSelectedMode(AnalysisMode.REMAKE_SCRIPT);
-        setView('workspace');
+      case 'waterfall':
+        setView('waterfall');
+        break;
+      case 'history':
+        setView('history');
+        break;
+      // Tone of voice is one section inside the brand profile modal, so it
+      // never needed a second door of its own.
+      case 'brand-dna':
+        setIsBrandModalOpen(true);
         break;
       case 'integrations':
         setView('integrations');
@@ -789,7 +933,13 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-white text-slate-800 font-sans antialiased selection:bg-pink-500 selection:text-white flex">
-      <Sidebar activeView={sidebarActive} onNavigate={handleNavigate} />
+      <Sidebar
+        activeView={sidebarActive}
+        onNavigate={handleNavigate}
+        isMobileOpen={isMobileNavOpen}
+        onCloseMobile={() => setIsMobileNavOpen(false)}
+        panel={sidebarPanel}
+      />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar
@@ -797,67 +947,79 @@ const App = () => {
           brandList={brandList}
           onSelectBrand={setActiveBrandId}
           onManageBrand={() => setIsBrandModalOpen(true)}
+          onAddBrand={handleAddBrand}
+          onOpenMenu={() => setIsMobileNavOpen(true)}
         />
 
-        <main className="flex-1 px-10 py-10">
+        <div className="flex-1 flex min-w-0 items-start">
+        <main className="flex-1 min-w-0 px-4 py-6 lg:px-6 xl:px-10 lg:py-8 xl:py-10">
 
         {view === 'features' && (
           <FeatureLauncher onSelectFeature={handleSelectFeature} />
         )}
 
+        {view === 'radar' && <ContentRadar brand={activeBrand} />}
+
+        {view === 'waterfall' && <ContentWaterfall brand={activeBrand} />}
+
+        {view === 'history' && <HistoryPanel brand={activeBrand} />}
+
         {view === 'integrations' && <IntegrationsPanel />}
 
         {view === 'overview' && (
           <div className="max-w-5xl">
-            <h1 className="text-[40px] leading-tight font-bold text-slate-900">Tổng quan</h1>
+            <h1 className="text-[26px] sm:text-[32px] lg:text-[40px] leading-tight font-bold text-slate-900">
+              Sản xuất nội dung theo bản sắc thương hiệu
+            </h1>
             <p className="mt-3 text-[15px] text-slate-600">
               Không gian làm việc của {activeBrand.name}.
             </p>
 
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <div className="rounded-2xl border border-slate-200 p-6">
-                <p className="text-sm text-slate-500">Brand đang áp dụng</p>
-                <p className="mt-1.5 text-lg font-bold text-slate-900">{activeBrand.name}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-6">
-                <p className="text-sm text-slate-500">Số bộ quy tắc đã lưu</p>
-                <p className="mt-1.5 text-lg font-bold text-slate-900">{brandList.length}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-6">
-                <p className="text-sm text-slate-500">Giọng văn</p>
-                <p className="mt-1.5 text-lg font-bold text-slate-900 truncate">
-                  {activeBrand.brandVoiceTone || 'Chưa thiết lập'}
-                </p>
-              </div>
+            <div className="mt-8">
+              <OverviewIntro
+                brandName={activeBrand.name}
+                onNavigate={handleNavigate}
+                onOpenBrand={() => setIsBrandModalOpen(true)}
+              />
             </div>
-
-            <button
-              onClick={() => setView('features')}
-              className="mt-8 inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-[#e4004f] hover:bg-[#c70045] text-white font-semibold transition-colors"
-            >
-              Chọn tính năng <ArrowRight className="w-4 h-4" />
-            </button>
           </div>
         )}
 
         {view === 'workspace' && (
-        <div className="space-y-6">
+        <div className="max-w-[880px] 2xl:max-w-[1040px] space-y-7">
 
-        {/* WORKSPACE HEADER */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setView('features')}
-              className="w-10 h-10 rounded-full border border-slate-200 hover:border-[#e4004f] flex items-center justify-center transition-colors group shrink-0"
-              title="Quay lại danh sách tính năng"
-            >
-              <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-[#e4004f]" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{FEATURE_TITLES[selectedMode] || 'Phân tích AI'}</h1>
-              <p className="text-sm text-slate-500 mt-0.5">{featureConfig.subtitle}</p>
-            </div>
+        {/* BACK TO LIBRARY */}
+        <button
+          onClick={() => setView('features')}
+          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#A4145E] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Quay lại Content Creator
+        </button>
+
+        {/* FEATURE HEADER */}
+        <div className="flex flex-wrap items-start gap-5">
+          <div className="w-[68px] h-[68px] rounded-2xl bg-[#FDF2F7] border border-[#f8d3e0] flex items-center justify-center shrink-0">
+            <ActiveFeatureIcon className="w-9 h-9 text-[#A4145E]" strokeWidth={1.5} />
           </div>
+          <div className="flex-1 min-w-[240px]">
+            <h1 className="text-[24px] sm:text-[28px] lg:text-[34px] leading-tight font-bold text-slate-900">
+              {featureTitle(selectedMode)}
+            </h1>
+            <p className="mt-1.5 text-[15px] text-slate-600">{featureConfig.subtitle}</p>
+          </div>
+          {featureConfig.available !== false && !screenStream && (
+            <button
+              onClick={handleAnalyze}
+              disabled={loading.isLoading}
+              className="shrink-0 inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold transition-colors shadow-sm"
+            >
+              {loading.isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Đang chạy...</>
+              ) : (
+                <>Bắt đầu <ArrowRight className="w-4 h-4" /></>
+              )}
+            </button>
+          )}
         </div>
 
         {featureConfig.available === false ? (
@@ -871,61 +1033,79 @@ const App = () => {
             </p>
             <button
               onClick={() => setView('features')}
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[#e4004f] text-[#e4004f] font-medium hover:bg-[#fdeef3] transition-colors"
+              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[#A4145E] text-[#A4145E] font-medium hover:bg-[#FDF2F7] transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> Quay lại danh sách tính năng
+              <ArrowLeft className="w-4 h-4" /> Quay lại Content Creator
             </button>
           </div>
         ) : (
         <>
 
-        {/* ACTIVE BRAND GUIDELINES BANNER - hidden for pure analysis features */}
+        {/* WORKFLOW STEPPER */}
+        <WorkflowStepper steps={activeFeature.steps} current={currentStep} running={loading.isLoading} />
+
+        {/* ACTIVE BRAND GUIDELINES - hidden for pure analysis features */}
         {selectedMode !== AnalysisMode.ARTICLE_ANALYSIS && (
         <BrandSelectorBanner
           activeBrand={activeBrand}
+          brandList={brandList}
           onOpenModal={() => setIsBrandModalOpen(true)}
-          onQuickSelectPreset={handleSelectPreset}
+          onSelectBrand={setActiveBrandId}
+          onAddBrand={handleAddBrand}
         />
         )}
 
-        {/* WORKFLOW GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7">
-          
-          {/* LEFT COLUMN: Input & Configuration */}
-          <div className="lg:col-span-5 space-y-6">
-            
-            {/* STEP 1: Input Source */}
-            <div className="bg-white p-5 rounded-2xl border border-pink-200 shadow-sm space-y-3.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-rose-950 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 text-white inline-flex items-center justify-center text-[11px] shadow-sm">1</span>
-                  {featureConfig.sourceLabel}
-                </label>
-                <span className="text-[11px] text-pink-600 font-medium">{featureConfig.sourceHint}</span>
-              </div>
+        {/* ================= STEP 1: SOURCE ================= */}
+        <SectionCard n={1} title={activeFeature.steps[0][0]} hint={featureConfig.sourceHint}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
 
+            <div className="space-y-3.5 min-w-0">
               {/* Paste URL */}
               {featureConfig.sources.includes('link') && (
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-500" />
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A4145E]" />
+                    <input
+                      type="text"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleUrlFetch(); } }}
+                      placeholder={featureConfig.linkPlaceholder}
+                      className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:outline-none focus:border-[#A4145E] transition-colors placeholder:text-slate-400"
+                      disabled={!!screenStream}
+                    />
+                  </div>
+                  <Button
+                    variant="secondary"
+                    className="shrink-0 text-xs px-4"
+                    onClick={handleUrlFetch}
+                    disabled={loading.isLoading || !urlInput.trim() || !!screenStream}
+                  >
+                    {loading.isLoading && urlInput ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Lấy nội dung'}
+                  </Button>
+                </div>
+                {loading.isLoading && loading.step === 1 && (
+                  <RunStatus compact message={loading.message || 'Đang lấy nội dung...'} startedAt={runStartedAt} />
+                )}
+                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
                   <input
-                    type="text"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder={featureConfig.linkPlaceholder}
-                    className="w-full bg-pink-50/40 border border-pink-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-800 focus:outline-none focus:border-pink-500 focus:bg-white transition-colors placeholder:text-slate-400"
+                    type="checkbox"
+                    checked={readComments}
+                    onChange={(e) => setReadComments(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-[#A4145E] cursor-pointer"
                     disabled={!!screenStream}
                   />
-                </div>
-                <Button
-                  variant="secondary"
-                  className="shrink-0 text-xs px-3"
-                  onClick={handleUrlFetch}
-                  disabled={loading.isLoading || !urlInput.trim() || !!screenStream}
-                >
-                  {loading.isLoading && urlInput ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Fetch Link'}
-                </Button>
+                  Đọc cả bình luận trong bài
+                  {typeof fileData?.commentCount === 'number' && fileData.commentCount > 0 && (
+                    <span className="text-[#A4145E] font-medium">
+                      · đã đọc {fileData.commentCount} bình luận
+                    </span>
+                  )}
+                </label>
+                <p className="text-xs text-slate-500">
+                  Nhận link bài viết, ảnh, video, reel trên Facebook, Instagram, Threads, X, TikTok, Douyin, YouTube và link web thường.
+                </p>
               </div>
               )}
 
@@ -940,20 +1120,20 @@ const App = () => {
 
               {/* Live Screen Option */}
               {featureConfig.sources.includes('screen') && (
-                <div className="relative pt-1">
+                <div className="relative pt-0.5">
                   {!screenStream ? (
-                    <button 
+                    <button
                       onClick={startScreenShare}
-                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-pink-300 bg-pink-50/60 hover:bg-pink-100/70 text-pink-800 flex items-center justify-center gap-2 transition-all text-xs group shadow-sm"
+                      className="w-full py-3 px-3 rounded-xl border border-dashed border-pink-300 bg-pink-50/60 hover:bg-pink-100/70 text-pink-800 flex items-center justify-center gap-2 transition-all text-xs group"
                     >
                       <Monitor className="w-4 h-4 group-hover:scale-110 transition-transform text-pink-600" />
-                      <span className="font-semibold">Quay Màn Hình Trực Tiếp (Live Screen Capture)</span>
+                      <span className="font-semibold">Quay màn hình trực tiếp</span>
                     </button>
                   ) : (
                     <div className="bg-slate-900 rounded-xl overflow-hidden border border-pink-500 shadow-2xl relative">
-                      <div className="bg-gradient-to-r from-pink-600 to-rose-600 px-3 py-1.5 flex items-center justify-between text-white text-xs font-medium">
+                      <div className="bg-pink-600 px-3 py-1.5 flex items-center justify-between text-white text-xs font-medium">
                         <span className="flex items-center gap-1.5"><Monitor className="w-3.5 h-3.5" /> Đang thu màn hình của bạn</span>
-                        <button onClick={stopScreenShare} className="hover:bg-rose-700 rounded p-1"><X className="w-3.5 h-3.5" /></button>
+                        <button onClick={stopScreenShare} className="hover:bg-pink-700 rounded p-1"><X className="w-3.5 h-3.5" /></button>
                       </div>
                       <div className="relative aspect-video bg-black">
                         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
@@ -961,411 +1141,461 @@ const App = () => {
                       <div className="p-3 bg-slate-900 border-t border-pink-900/50 flex justify-center">
                         <Button onClick={captureScreenAndAnalyze} className="w-full text-xs">
                           <Camera className="w-4 h-4 mr-1.5" />
-                          Chụp Khung Hình & Phân Tích Ngay
+                          Chụp khung hình & phân tích ngay
                         </Button>
                       </div>
                     </div>
                   )}
                 </div>
               )}
-            </div>
 
-            {/* STEP 2: Brand Tuning & Formula */}
-            <div className="bg-white p-5 rounded-2xl border border-pink-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-rose-950 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-gradient-to-r from-pink-500 to-rose-600 text-white inline-flex items-center justify-center text-[11px] shadow-sm">2</span>
-                  Cấu Hình Công Thức & Ghi Chú Riêng
-                </label>
-              </div>
-
-              {/* Script Formula Selection */}
-              {(selectedMode === AnalysisMode.REMAKE_SCRIPT || selectedMode === AnalysisMode.SCRIPT_GENERATION) && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-pink-900 flex items-center gap-1">
-                    <Sigma className="w-3.5 h-3.5 text-pink-600" /> Cấu Trúc / Công Thức Kịch Bản:
-                  </label>
-                  <select 
-                    value={selectedFormula}
-                    onChange={(e) => setSelectedFormula(e.target.value as ScriptFormula)}
-                    className="w-full bg-pink-50/50 border border-pink-200 text-slate-800 text-xs rounded-xl p-3 focus:border-pink-500 focus:bg-white outline-none"
-                  >
-                    {(Object.keys(FORMULA_LABELS) as ScriptFormula[]).map((f) => (
-                      <option key={f} value={f}>{FORMULA_LABELS[f]}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Text and screenshot inputs, shown only for features that use them */}
-              {(featureConfig.sources.includes('text') || featureConfig.sources.includes('images')) && (
-                <div className="space-y-4">
-                  {featureConfig.sources.includes('text') && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-pink-900 flex items-center gap-1">
-                      <PenTool className="w-3.5 h-3.5 text-pink-600" /> {featureConfig.textLabel}
-                    </label>
-                    <textarea
-                      className="w-full bg-pink-50/40 border border-pink-200 rounded-xl p-3 text-xs text-slate-800 focus:border-pink-500 focus:bg-white outline-none h-40 resize-none custom-scrollbar placeholder:text-slate-400"
-                      placeholder={featureConfig.textPlaceholder}
-                      value={customUserPrompt}
-                      onChange={(e) => setCustomUserPrompt(e.target.value)}
-                    />
-                  </div>
-                  )}
-
-                  {featureConfig.sources.includes('images') && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-pink-900 flex items-center gap-1">
-                      <FileImage className="w-3.5 h-3.5 text-pink-600" /> Ảnh chụp bài viết (có thể chọn nhiều ảnh):
-                    </label>
-
-                    <div className="relative border border-dashed border-pink-300 rounded-xl p-4 bg-pink-50/40 hover:bg-pink-50/70 transition-colors text-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => {
-                          handleArticleImagesSelect(e.target.files);
-                          e.target.value = '';
-                        }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
-                      <UploadCloud className="w-6 h-6 text-pink-600 mx-auto mb-1.5" />
-                      <p className="text-xs font-semibold text-slate-800">Kéo thả hoặc chọn ảnh chụp bài viết</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        AI sẽ đọc chữ trong ảnh và phân tích cả bố cục, màu sắc, chữ trên ảnh
-                      </p>
-                    </div>
-
-                    {articleImages.length > 0 && (
-                      <div className="grid grid-cols-4 gap-2 pt-1">
-                        {articleImages.map((img, i) => (
-                          <div key={img.previewUrl} className="relative group rounded-lg overflow-hidden border border-pink-200 bg-white">
-                            <img src={img.previewUrl} alt={`Ảnh bài viết ${i + 1}`} className="w-full h-20 object-cover" />
-                            <button
-                              onClick={() => removeArticleImage(i)}
-                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Xóa ảnh này"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {articleImages.length > 0 && (
-                      <p className="text-[11px] text-emerald-700 font-medium">
-                        Đã thêm {articleImages.length} ảnh — AI sẽ phân tích cả phần hình ảnh.
-                      </p>
-                    )}
-                  </div>
-                  )}
-                </div>
-              )}
-
-              {/* Extra Instructions */}
+              {/* Pasted text source */}
+              {featureConfig.sources.includes('text') && (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-rose-900 flex items-center gap-1">
-                  <FilePenLine className="w-3.5 h-3.5 text-pink-600" /> Yêu cầu bổ sung đặc biệt (Tùy chọn):
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <PenTool className="w-3.5 h-3.5 text-[#A4145E]" /> {featureConfig.textLabel}
                 </label>
-                <textarea 
-                  className="w-full bg-pink-50/40 border border-pink-200 rounded-xl p-3 text-xs text-slate-800 focus:border-pink-500 focus:bg-white outline-none h-20 resize-none custom-scrollbar placeholder:text-slate-400"
-                  placeholder="VD: Nhấn mạnh vào dòng xịt khoáng chống nắng Parasola, thời lượng dưới 60s, xưng hô 'Nàng'..."
-                  value={userInstructions}
-                  onChange={(e) => setUserInstructions(e.target.value)}
+                <textarea
+                  className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#A4145E] outline-none h-40 resize-none custom-scrollbar placeholder:text-slate-400"
+                  placeholder={featureConfig.textPlaceholder}
+                  value={customUserPrompt}
+                  onChange={(e) => setCustomUserPrompt(e.target.value)}
                 />
               </div>
-
-              {/* ACTION TRIGGER BUTTON */}
-              {!screenStream && (
-                <Button 
-                  onClick={handleAnalyze} 
-                  disabled={loading.isLoading} 
-                  className="w-full py-3.5 text-sm md:text-base font-bold shadow-md"
-                >
-                  {loading.isLoading && !urlInput && !userAssetData ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>{loading.message}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      <span>{featureConfig.actionLabel}</span>
-                    </>
-                  )}
-                </Button>
               )}
 
-              {/* Error Message */}
-              {error && (
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-3 animate-in fade-in shadow-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-                  <div className="leading-relaxed">{error}</div>
+              {/* Screenshots of an article */}
+              {featureConfig.sources.includes('images') && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <FileImage className="w-3.5 h-3.5 text-[#A4145E]" /> Ảnh chụp bài viết (chọn được nhiều ảnh)
+                </label>
+                <div className="relative border border-dashed border-pink-300 rounded-xl p-4 bg-pink-50/40 hover:bg-pink-50/70 transition-colors text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => { handleArticleImagesSelect(e.target.files); e.target.value = ''; }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <UploadCloud className="w-6 h-6 text-pink-600 mx-auto mb-1.5" />
+                  <p className="text-xs font-semibold text-slate-800">Kéo thả hoặc chọn ảnh chụp bài viết</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    AI đọc chữ trong ảnh và phân tích cả bố cục, màu sắc
+                  </p>
                 </div>
+
+                {/* A paste here bubbles to the window listener, which is the single
+                    place that reads the clipboard - handling it twice would add
+                    every screenshot twice. */}
+                <div
+                  tabIndex={0}
+                  className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-3 text-center cursor-text transition-colors outline-none focus:border-[#A4145E] focus:bg-[#FDF2F7] hover:border-slate-400"
+                >
+                  <div className="flex items-center justify-center gap-2 text-slate-600">
+                    <ClipboardPaste className="w-4 h-4 text-[#A4145E]" />
+                    <span className="text-xs font-semibold">Hoặc bấm vào ô này rồi Ctrl+V để dán ảnh</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Chụp màn hình xong dán thẳng vào, không cần lưu thành file
+                  </p>
+                </div>
+
+                {pastedCount > 0 && (
+                  <p className="text-[11px] font-semibold text-emerald-700">
+                    Đã dán {pastedCount} ảnh từ clipboard.
+                  </p>
+                )}
+
+                {articleImages.length > 0 && (
+                  <p className="text-[11px] text-slate-500">
+                    Đang có {articleImages.length} ảnh — AI sẽ đọc chữ và phân tích cả phần hình.
+                  </p>
+                )}
+
+                {articleImages.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 pt-1">
+                    {articleImages.map((img, i) => (
+                      <div key={img.previewUrl} className="relative group rounded-lg overflow-hidden border border-pink-200 bg-white">
+                        <img src={img.previewUrl} alt={`Ảnh bài viết ${i + 1}`} className="w-full h-20 object-cover" />
+                        <button
+                          onClick={() => removeArticleImage(i)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-pink-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Xóa ảnh này"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               )}
             </div>
 
-          </div>
-
-          {/* RIGHT COLUMN: Media Preview & Results */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* SOURCE MEDIA PREVIEW */}
-            {fileData && (
-              <div className="bg-white rounded-2xl overflow-hidden border border-pink-200 shadow-sm relative group">
-                <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-pink-700 border border-pink-300 flex items-center gap-1.5 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
-                  {fileData.videoMeta ? `${fileData.videoMeta.platform} · Đã tải về` : fileData.file ? 'File Gốc' : fileData.type === 'url' ? 'Web Link' : 'Nguồn Dữ Liệu'}
-                </div>
-
-                <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {fileData.previewUrl && !fileData.videoMeta && (
+            {/* SOURCE PREVIEW */}
+            <div className="min-w-0">
+              {fileData ? (
+                <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white relative group">
+                  <div className="absolute top-2.5 right-2.5 z-20 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {fileData.previewUrl && !fileData.videoMeta && (
+                      <button
+                        onClick={downloadCurrentFile}
+                        className="bg-[#A4145E] hover:bg-[#86104D] text-white p-1.5 rounded-full transition-all shadow-md"
+                        title="Tải về máy"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
-                      onClick={downloadCurrentFile}
-                      className="bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white p-2 rounded-full transition-all shadow-md"
-                      title="Tải về máy"
+                      onClick={handleClearData}
+                      className="bg-slate-700 hover:bg-slate-900 text-white p-1.5 rounded-full transition-colors shadow-md"
+                      title="Xóa nguồn này"
                     >
-                      <Download className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+
+                  {fileData.videoMeta ? (
+                    <div>
+                      {fileData.videoMeta.thumbnail ? (
+                        <img src={fileData.videoMeta.thumbnail} alt="Thumbnail video gốc" className="w-full aspect-video object-cover bg-slate-950" />
+                      ) : (
+                        <div className="aspect-video flex items-center justify-center bg-slate-950 text-pink-300">
+                          <Globe className="w-8 h-8" />
+                        </div>
+                      )}
+                      <div className="p-3.5 space-y-1.5">
+                        <p className="text-[13px] font-semibold text-slate-900 line-clamp-2 leading-snug">
+                          {fileData.videoMeta.title || '(Không có caption)'}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {fileData.videoMeta.platform}
+                          {fileData.videoMeta.durationSec !== null && ` · ${fileData.videoMeta.durationSec}s`}
+                        </p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-600 font-medium pt-0.5">
+                          <span>👁 {fileData.videoMeta.viewCount?.toLocaleString('vi-VN') ?? '—'}</span>
+                          <span>❤️ {fileData.videoMeta.likeCount?.toLocaleString('vi-VN') ?? '—'}</span>
+                          <span>💬 {fileData.videoMeta.commentCount?.toLocaleString('vi-VN') ?? '—'}</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700 font-semibold pt-0.5">
+                          ✓ Đã tải video thật gửi tới AI
+                        </p>
+                      </div>
+                    </div>
+                  ) : fileData.sourceText ? (
+                    <div className="p-3.5 space-y-2">
+                      <div className="flex items-center gap-1.5 text-[#A4145E]">
+                        <FileCheck2 className="w-4 h-4" />
+                        <span className="text-[11px] font-bold uppercase tracking-wide">Đã đọc nội dung</span>
+                      </div>
+                      <p className="text-[13px] font-semibold text-slate-900 line-clamp-2 leading-snug">
+                        {fileData.sourceTitle || fileData.url}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {fileData.sourceText.length.toLocaleString('vi-VN')} ký tự đã trích xuất
+                        {fileData.sourceImages?.length ? ' · ' + fileData.sourceImages.length + ' ảnh trong bài' : ''}
+                      </p>
+                      <p className="text-[11px] text-slate-600 line-clamp-6 leading-relaxed bg-slate-50 rounded-lg p-2.5 border border-slate-100">
+                        {fileData.sourceText.slice(0, 400)}
+                      </p>
+                    </div>
+                  ) : fileData.type === 'video' ? (
+                    <video src={fileData.previewUrl} controls className="w-full aspect-video object-contain bg-slate-950" />
+                  ) : fileData.type === 'audio' ? (
+                    <div className="p-4 flex flex-col items-center justify-center bg-pink-50/50 text-pink-800 gap-2.5">
+                      <Mic className="w-8 h-8 text-pink-500" />
+                      <audio src={fileData.previewUrl} controls className="w-full" />
+                      <p className="text-[11px] text-slate-500 truncate max-w-full">{fileData.file?.name || 'File âm thanh'}</p>
+                    </div>
+                  ) : fileData.type === 'url' ? (
+                    <div className="p-4 flex flex-col items-center justify-center bg-pink-50/50 text-pink-800 gap-2 text-center">
+                      <Globe className="w-8 h-8 text-pink-500" />
+                      <p className="font-bold text-slate-900 text-[13px]">Đã kết nối link nguồn</p>
+                      <p className="text-[11px] text-slate-500 break-all font-mono">{fileData.url}</p>
+                    </div>
+                  ) : (
+                    <img src={fileData.previewUrl} alt="Preview" className="w-full aspect-video object-contain bg-slate-950" />
                   )}
-                  <button 
-                    onClick={handleClearData}
-                    className="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-full transition-colors shadow-md"
-                    title="Xóa nguồn này"
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center h-full flex flex-col items-center justify-center min-h-[180px]">
+                  <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-2.5">
+                    <ActiveFeatureIcon className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
+                  </div>
+                  <p className="text-[13px] font-semibold text-slate-600">Chưa có nguồn</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{activeFeature.steps[0][1]}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* ================= STEP 2: TUNING ================= */}
+        <SectionCard n={2} title={activeFeature.steps[1][0]} hint={activeFeature.steps[1][1]}>
+          <div className="space-y-5">
+            {/* Bộ tiêu chí chấm điểm */}
+            {(selectedMode === AnalysisMode.ARTICLE_SCORING || selectedMode === AnalysisMode.VIDEO_SCORING) && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5 text-[#A4145E]" /> Bộ tiêu chí chấm điểm
+                  </label>
+                  <button
+                    onClick={() => setIsChecklistOpen(true)}
+                    className="text-xs font-semibold text-[#A4145E] hover:underline"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    Quản lý bộ tiêu chí
                   </button>
                 </div>
-
-                {fileData.videoMeta ? (
-                  <div>
-                    {fileData.videoMeta.thumbnail ? (
-                      <img
-                        src={fileData.videoMeta.thumbnail}
-                        alt="Thumbnail video gốc"
-                        className="w-full max-h-[300px] object-contain bg-slate-950"
-                      />
-                    ) : (
-                      <div className="h-[120px] flex items-center justify-center bg-slate-950 text-pink-300">
-                        <Globe className="w-10 h-10" />
-                      </div>
-                    )}
-                    <div className="p-4 space-y-2 bg-pink-50/40">
-                      <p className="text-sm font-semibold text-slate-900 line-clamp-2">
-                        {fileData.videoMeta.title || '(Không có caption)'}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {fileData.videoMeta.uploader || 'Không rõ tác giả'}
-                        {fileData.videoMeta.durationSec !== null && ` · ${fileData.videoMeta.durationSec}s`}
-                        {` · ${(fileData.videoMeta.sizeBytes / 1024 / 1024).toFixed(1)}MB`}
-                      </p>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 font-medium pt-1">
-                        <span>👁 {fileData.videoMeta.viewCount?.toLocaleString('vi-VN') ?? '—'}</span>
-                        <span>❤️ {fileData.videoMeta.likeCount?.toLocaleString('vi-VN') ?? '—'}</span>
-                        <span>💬 {fileData.videoMeta.commentCount?.toLocaleString('vi-VN') ?? '—'}</span>
-                        <span>🔁 {fileData.videoMeta.shareCount?.toLocaleString('vi-VN') ?? '—'}</span>
-                      </div>
-                      <p className="text-[11px] text-emerald-700 font-semibold pt-1">
-                        ✓ Video đã được tải và gửi tới AI — phân tích dựa trên nội dung thật.
-                      </p>
-                    </div>
-                  </div>
-                ) : fileData.type === 'video' ? (
-                  <video
-                    src={fileData.previewUrl}
-                    controls
-                    className="w-full max-h-[340px] object-contain bg-slate-950"
-                  />
-                ) : fileData.type === 'audio' ? (
-                  <div className="h-[160px] flex flex-col items-center justify-center bg-pink-50/50 text-pink-800 gap-3 px-8">
-                    <Mic className="w-10 h-10 text-pink-500" />
-                    <audio src={fileData.previewUrl} controls className="w-full max-w-md" />
-                    <p className="text-xs text-slate-500">{fileData.file?.name || 'File Âm Thanh'}</p>
-                  </div>
-                ) : fileData.type === 'url' ? (
-                  <div className="h-[180px] flex flex-col items-center justify-center bg-pink-50/50 text-pink-800 gap-2.5 p-6">
-                    <Globe className="w-10 h-10 text-pink-500" />
-                    <div className="text-center">
-                      <p className="font-bold text-slate-900 text-sm">Đã kết nối Link Nguồn</p>
-                      <p className="text-xs text-slate-500 truncate max-w-md mt-1 font-mono">{fileData.url}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <img 
-                    src={fileData.previewUrl} 
-                    alt="Preview" 
-                    className="w-full max-h-[340px] object-contain bg-slate-950" 
-                  />
-                )}
+                <select
+                  value={selectedChecklistId}
+                  onChange={(e) => setSelectedChecklistId(e.target.value)}
+                  className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#A4145E] outline-none"
+                >
+                  <option value="">Để hệ thống AI tự chấm điểm</option>
+                  {availableChecklists.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      Chấm theo bộ: {c.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500">
+                  {selectedChecklistId
+                    ? 'AI sẽ chấm đúng theo thang điểm bạn đã viết trong bộ tiêu chí này.'
+                    : availableChecklists.length
+                      ? 'AI tự chấm theo Brand DNA và bộ tiêu chí chuẩn của app. Chọn một bộ ở trên để chấm theo thang điểm riêng của bạn.'
+                      : 'AI tự chấm theo Brand DNA và bộ tiêu chí chuẩn của app. Bấm "Quản lý bộ tiêu chí" để thêm bộ riêng, mỗi bộ thêm vào sẽ hiện thành một lựa chọn ở đây.'}
+                </p>
               </div>
             )}
 
-            {/* RESULTS CONTAINER */}
-            <div ref={resultRef} className="bg-white rounded-2xl border border-pink-200 min-h-[500px] flex flex-col shadow-sm overflow-hidden">
-              
-              {/* Result Header */}
-              <div className="p-4 border-b border-pink-200 flex items-center justify-between bg-pink-50/60">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-pink-100 text-pink-700 rounded-xl border border-pink-300 shadow-sm">
-                    <Sparkles className="w-4 h-4 text-pink-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                      Kết quả: {FEATURE_TITLES[selectedMode] || 'Phân tích AI'}
-                    </h3>
-                    <span className="text-[11px] text-slate-600 font-medium">
-                      Áp dụng quy tắc: <strong className="text-pink-700">{activeBrand.name}</strong>
-                    </span>
-                  </div>
-                </div>
-
-                {result && (
-                  <div className="flex items-center flex-wrap gap-2">
-                    <button 
-                      onClick={handleExportExcel}
-                      className="text-xs flex items-center gap-1.5 text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition-colors shadow-sm font-semibold"
-                      title="Tải bảng phân tích chi tiết định dạng Excel / CSV"
-                    >
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Tải Excel (CSV)</span>
-                    </button>
-                    <button 
-                      onClick={handleOpenGoogleSheets}
-                      className="text-xs flex items-center gap-1.5 text-sky-800 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg border border-sky-300 transition-colors shadow-sm font-semibold"
-                      title="Mở bảng dữ liệu trong Google Sheets (đã tự động sao chép để bạn chỉ cần dán Ctrl+V)"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Mở Google Sheets</span>
-                    </button>
-                    <button 
-                      onClick={exportAsTxt}
-                      className="text-xs flex items-center gap-1 text-slate-700 hover:text-slate-900 bg-white hover:bg-pink-50 px-2.5 py-1.5 rounded-lg border border-pink-200 transition-colors font-medium shadow-sm"
-                      title="Xuất file văn bản .txt"
-                    >
-                      <Download className="w-3.5 h-3.5 text-slate-500" />
-                      <span className="hidden sm:inline">Xuất .txt</span>
-                    </button>
-                    <button 
-                      onClick={copyToClipboard}
-                      className="text-xs flex items-center gap-1 text-white bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 px-3 py-1.5 rounded-lg font-semibold transition-all shadow-sm"
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-200" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copied ? "Đã copy!" : "Copy Kịch Bản"}
-                    </button>
-                  </div>
-                )}
+            {/* Script Formula Selection */}
+            {(selectedMode === AnalysisMode.REMAKE_SCRIPT || selectedMode === AnalysisMode.SCRIPT_GENERATION
+              || selectedMode === AnalysisMode.ARTICLE_WRITING) && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Sigma className="w-3.5 h-3.5 text-[#A4145E]" /> Cấu trúc / công thức triển khai
+                </label>
+                <select
+                  value={selectedFormula}
+                  onChange={(e) => setSelectedFormula(e.target.value as ScriptFormula)}
+                  className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#A4145E] outline-none"
+                >
+                  {(Object.keys(FORMULA_LABELS) as ScriptFormula[]).map((f) => (
+                    <option key={f} value={f}>{FORMULA_LABELS[f]}</option>
+                  ))}
+                </select>
               </div>
-              
-              {/* Result Body */}
-              <div className="p-6 flex-1 overflow-y-auto max-h-[700px] custom-scrollbar bg-[#fdfafb]">
-                {result ? (
-                  <div className="space-y-6">
-                    <div className="prose prose-slate max-w-none">
-                      <div 
-                        className="font-sans leading-relaxed text-xs md:text-sm space-y-4"
-                        dangerouslySetInnerHTML={{ __html: result }}
+            )}
+
+            {/* Extra Instructions */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                <FilePenLine className="w-3.5 h-3.5 text-[#A4145E]" /> Yêu cầu bổ sung (tùy chọn)
+              </label>
+              <textarea
+                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#A4145E] outline-none h-24 resize-none custom-scrollbar placeholder:text-slate-400"
+                placeholder="VD: Nhấn mạnh sản phẩm chủ lực, thời lượng dưới 60s, giữ đúng xưng hô của brand..."
+                value={userInstructions}
+                onChange={(e) => setUserInstructions(e.target.value)}
+              />
+            </div>
+
+            {/* ACTION TRIGGER */}
+            {!screenStream && (
+              <Button
+                onClick={handleAnalyze}
+                disabled={loading.isLoading}
+                className="w-full py-3.5 text-sm font-bold shadow-md"
+              >
+                {loading.isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Đang chạy...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    <span>{featureConfig.actionLabel}</span>
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-xs flex items-start gap-3 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+                <div className="leading-relaxed">{error}</div>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* ================= STEP 3: RESULT ================= */}
+        <div ref={resultRef}>
+        <SectionCard
+          n={3}
+          title={activeFeature.steps[2][0]}
+          hint={result ? `Áp dụng quy tắc: ${activeBrand.name}` : activeFeature.steps[2][1]}
+          action={result ? (
+            <div className="flex items-center flex-wrap gap-2 justify-end">
+              <button
+                onClick={handleOpenGoogleSheets}
+                className="text-xs flex items-center gap-1.5 text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition-colors font-semibold"
+                title="Mở Google Sheets mới và dán kết quả đã định dạng (Ctrl+V)"
+              >
+                <Sheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">Google Sheets</span>
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="text-xs flex items-center gap-1.5 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors font-medium"
+                title="Tải file CSV mở được bằng Excel"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+                <span className="hidden sm:inline">CSV</span>
+              </button>
+              <button
+                onClick={exportAsTxt}
+                className="text-xs flex items-center gap-1.5 text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors font-medium"
+                title="Xuất file văn bản .txt"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span className="hidden sm:inline">.txt</span>
+              </button>
+              <button
+                onClick={copyToClipboard}
+                className="text-xs flex items-center gap-1.5 text-white bg-[#A4145E] hover:bg-[#86104D] px-3 py-1.5 rounded-lg font-semibold transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Đã copy' : 'Copy'}
+              </button>
+            </div>
+          ) : undefined}
+        >
+          {sheetHint && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs text-emerald-900">
+              <Sheet className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+              <span className="leading-relaxed">{sheetHint}</span>
+            </div>
+          )}
+
+          {loading.isLoading && loading.step === 2 ? (
+            <RunStatus
+              message={loading.message || 'Đang xử lý...'}
+              startedAt={runStartedAt}
+              expectation={runExpectation}
+            />
+          ) : result ? (
+            <div className="space-y-6">
+              {/* Long results simply scroll inside this pane. */}
+              <div className="max-h-[720px] overflow-y-auto overflow-x-auto custom-scrollbar pr-1">
+                {/* `analysis-output` in index.css styles the model's raw HTML.
+                    Tailwind only builds classes it can find in the source, so a
+                    class the model invents at runtime has no CSS at all - real
+                    rules on the tags themselves are what keep the result readable. */}
+                <div
+                  className="analysis-output font-sans"
+                  dangerouslySetInnerHTML={{ __html: result }}
+                />
+              </div>
+
+              {/* Thumbnail Remake Section if in THUMBNAIL_AUDIT */}
+              {selectedMode === AnalysisMode.THUMBNAIL_AUDIT && (
+                <div className="border-t border-slate-200 pt-6 animate-in fade-in">
+                  <div className="flex items-center gap-2 mb-4 text-pink-900">
+                    <Wand2 className="w-5 h-5 text-pink-600" />
+                    <h3 className="text-base font-bold">Remake thumbnail cho brand ({activeBrand.name})</h3>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-5 border border-slate-200 space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs uppercase text-slate-700 font-bold">1. Ảnh khuôn mặt / sản phẩm của brand</label>
+                      <FileDropzone
+                        variant="mini"
+                        onFileSelect={handleUserAssetSelect}
+                        currentFile={userAssetData?.file || null}
+                        label="Thả ảnh sản phẩm hoặc model của brand vào đây"
                       />
                     </div>
 
-                    {/* Thumbnail Remake Section if in THUMBNAIL_AUDIT */}
-                    {selectedMode === AnalysisMode.THUMBNAIL_AUDIT && (
-                      <div className="mt-8 border-t border-pink-200 pt-6 animate-in fade-in">
-                        <div className="flex items-center gap-2 mb-4 text-pink-900">
-                          <Wand2 className="w-5 h-5 text-pink-600" />
-                          <h3 className="text-base font-bold">Remake Thumbnail Cho Brand ({activeBrand.name})</h3>
-                        </div>
-                        
-                        <div className="bg-white rounded-xl p-5 border border-pink-200 shadow-sm space-y-4">
-                          <div className="space-y-1.5">
-                            <label className="text-xs uppercase text-slate-700 font-bold">1. Upload ảnh khuôn mặt / Sản phẩm Brand của bạn</label>
-                            <FileDropzone 
-                              variant="mini" 
-                              onFileSelect={handleUserAssetSelect} 
-                              currentFile={userAssetData?.file || null}
-                              label="Thả ảnh sản phẩm hoặc model của brand vào đây"
-                            />
-                          </div>
-                          
-                          <div className="space-y-1.5">
-                            <label className="text-xs uppercase text-slate-700 font-bold">2. Tiêu đề chữ nổi trên Thumbnail</label>
-                            <input 
-                              type="text" 
-                              className="w-full bg-pink-50/40 border border-pink-200 rounded-lg p-2.5 text-xs text-slate-800 focus:border-pink-500 focus:bg-white outline-none"
-                              placeholder={activeBrand.tagline || "VD: 1 CHẠM - 12H BẢO VỆ CHUẨN NHẬT..."}
-                              value={thumbnailText}
-                              onChange={(e) => setThumbnailText(e.target.value)}
-                            />
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-xs uppercase text-slate-700 font-bold">3. Tỉ lệ khung hình</label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <button
-                                onClick={() => setAspectRatio('16:9')}
-                                className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '16:9' ? 'bg-gradient-to-r from-pink-500 to-rose-600 border-pink-400 text-white shadow-md' : 'bg-pink-50/50 border-pink-200 text-slate-700 hover:bg-pink-100/60'}`}
-                              >
-                                16:9 (YouTube Video)
-                              </button>
-                              <button
-                                onClick={() => setAspectRatio('9:16')}
-                                className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '9:16' ? 'bg-gradient-to-r from-pink-500 to-rose-600 border-pink-400 text-white shadow-md' : 'bg-pink-50/50 border-pink-200 text-slate-700 hover:bg-pink-100/60'}`}
-                              >
-                                9:16 (TikTok / Reels / Shorts)
-                              </button>
-                            </div>
-                          </div>
-
-                          <Button 
-                            onClick={handleRemakeThumbnail}
-                            disabled={!userAssetData || loading.isLoading}
-                            className="w-full text-xs py-2.5"
-                          >
-                            {loading.isLoading && userAssetData ? (
-                              <><Loader2 className="animate-spin w-4 h-4"/> Đang render hình ảnh chuẩn Parasola Pink...</>
-                            ) : "Tạo Thumbnail Remake Mới"}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {generatedImageUrl && (
-                      <div className="mt-6 space-y-3 animate-in zoom-in-95 duration-500">
-                        <h4 className="text-emerald-700 text-xs font-bold flex items-center gap-1.5">
-                          <Check className="w-4 h-4 text-emerald-600" /> Thumbnail Remake Hoàn Tất Chuẩn Nhận Diện Brand
-                        </h4>
-                        <div className={`rounded-xl overflow-hidden border-2 border-pink-400 shadow-xl relative group mx-auto ${aspectRatio === '9:16' ? 'max-w-[280px]' : 'w-full'}`}>
-                          <img src={generatedImageUrl} alt="Generated Thumbnail" className="w-full h-auto" />
-                          <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <a 
-                              href={generatedImageUrl} 
-                              download={`remake-thumbnail-${activeBrand.name.toLowerCase().replace(/\s+/g, '-')}.png`}
-                              className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 hover:scale-105 transition-transform shadow-xl"
-                            >
-                              <Download className="w-4 h-4 text-pink-600" /> Tải Thumbnail Về Máy
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-400 min-h-[380px] p-8 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-pink-100 border border-pink-200 flex items-center justify-center text-pink-600 mb-3 shadow-sm">
-                      <Sparkles className="w-8 h-8 text-pink-500" />
+                    <div className="space-y-1.5">
+                      <label className="text-xs uppercase text-slate-700 font-bold">2. Tiêu đề chữ nổi trên thumbnail</label>
+                      <input
+                        type="text"
+                        className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 focus:border-[#A4145E] outline-none"
+                        placeholder={activeBrand.tagline || 'VD: 1 CHẠM - 12H BẢO VỆ CHUẨN NHẬT...'}
+                        value={thumbnailText}
+                        onChange={(e) => setThumbnailText(e.target.value)}
+                      />
                     </div>
-                    <h4 className="text-sm font-bold text-slate-800">Sẵn sàng: {FEATURE_TITLES[selectedMode] || 'Phân tích AI'}</h4>
-                    <p className="text-xs text-slate-500 max-w-sm mt-1 leading-relaxed">
-                      {featureConfig.subtitle} Điền nguồn ở cột bên trái rồi bấm chạy. Kết quả sẽ bám theo bản sắc của thương hiệu <strong>{activeBrand.name}</strong>.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
 
-          </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs uppercase text-slate-700 font-bold">3. Tỉ lệ khung hình</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setAspectRatio('16:9')}
+                          className={`py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '16:9' ? 'bg-[#A4145E] border-[#A4145E] text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                        >
+                          16:9 (YouTube)
+                        </button>
+                        <button
+                          onClick={() => setAspectRatio('9:16')}
+                          className={`py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '9:16' ? 'bg-[#A4145E] border-[#A4145E] text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                        >
+                          9:16 (TikTok / Reels)
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleRemakeThumbnail}
+                      disabled={!userAssetData || loading.isLoading}
+                      className="w-full text-xs py-2.5"
+                    >
+                      {loading.isLoading && userAssetData ? (
+                        <><Loader2 className="animate-spin w-4 h-4" /> Đang render hình ảnh chuẩn brand...</>
+                      ) : 'Tạo thumbnail remake mới'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {generatedImageUrl && (
+                <div className="space-y-3 animate-in zoom-in-95 duration-500">
+                  <h4 className="text-emerald-700 text-xs font-bold flex items-center gap-1.5">
+                    <Check className="w-4 h-4 text-emerald-600" /> Thumbnail remake hoàn tất
+                  </h4>
+                  <div className={`rounded-xl overflow-hidden border-2 border-pink-400 relative group mx-auto ${aspectRatio === '9:16' ? 'max-w-[280px]' : 'w-full'}`}>
+                    <img src={generatedImageUrl} alt="Generated Thumbnail" className="w-full h-auto" />
+                    <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <a
+                        href={generatedImageUrl}
+                        download={`remake-thumbnail-${activeBrand.name.toLowerCase().replace(/\s+/g, '-')}.png`}
+                        className="bg-white text-slate-900 px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 hover:scale-105 transition-transform"
+                      >
+                        <Download className="w-4 h-4 text-pink-600" /> Tải thumbnail về máy
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center py-14">
+              <div className="w-14 h-14 rounded-2xl bg-[#FDF2F7] border border-[#f8d3e0] flex items-center justify-center mb-3">
+                <Sparkles className="w-7 h-7 text-[#A4145E]" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-800">Chưa có kết quả</h4>
+              <p className="text-xs text-slate-500 max-w-sm mt-1 leading-relaxed">
+                Điền nguồn ở bước 1 rồi bấm <strong>Bắt đầu</strong>. Kết quả sẽ bám theo bản sắc của thương hiệu{' '}
+                <strong>{activeBrand.name}</strong> và có thể cuộn để đọc hết.
+              </p>
+            </div>
+          )}
+        </SectionCard>
         </div>
 
         </>
@@ -1375,7 +1605,18 @@ const App = () => {
         )}
 
         </main>
+
+        {view === 'workspace' && (
+          <FeatureRail activeMode={selectedMode} onSelect={handleSelectFeature} panel={railPanel} />
+        )}
+        </div>
       </div>
+
+      <ChecklistModal
+        isOpen={isChecklistOpen}
+        onClose={() => setIsChecklistOpen(false)}
+        onChanged={() => setChecklistVersion((v) => v + 1)}
+      />
 
       {/* BRAND GUIDELINES MANAGEMENT MODAL */}
       <BrandProfileModal
@@ -1384,7 +1625,8 @@ const App = () => {
         activeBrand={activeBrand}
         onSaveBrand={handleSaveBrandProfile}
         brandList={brandList}
-        onSelectPreset={handleSelectPreset}
+        onImportBrand={handleImportBrand}
+        onDeleteBrand={handleDeleteBrand}
       />
     </div>
   );

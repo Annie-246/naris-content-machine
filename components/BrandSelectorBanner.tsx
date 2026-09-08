@@ -1,24 +1,27 @@
 import React from 'react';
-import { Building2, SlidersHorizontal, Sparkles, Check, MessageSquare, Volume2, ShieldCheck, Heart } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Check, MessageSquare, Volume2, ShieldCheck, Plus } from 'lucide-react';
 import { BrandProfile } from '../types';
-import { DEFAULT_BRAND_PRESETS } from '../data/brandPresets';
 
 interface BrandSelectorBannerProps {
   activeBrand: BrandProfile;
+  brandList: BrandProfile[];
   onOpenModal: () => void;
-  onQuickSelectPreset: (brandId: string) => void;
+  onSelectBrand: (brandId: string) => void;
+  onAddBrand: () => void;
 }
 
 export const BrandSelectorBanner: React.FC<BrandSelectorBannerProps> = ({
   activeBrand,
+  brandList,
   onOpenModal,
-  onQuickSelectPreset
+  onSelectBrand,
+  onAddBrand,
 }) => {
   return (
-    <div className="bg-gradient-to-r from-white via-pink-50/50 to-rose-50/70 border border-pink-200 rounded-2xl p-4 md:p-5 shadow-sm relative overflow-hidden">
+    <div className="bg-gradient-to-r from-white via-pink-50/50 to-pink-50/70 border border-pink-200 rounded-2xl p-4 md:p-5 shadow-sm relative overflow-hidden">
       {/* Background subtle glow */}
       <div className="absolute -right-10 -top-10 w-48 h-48 bg-pink-200/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-pink-200/30 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Active Brand Information */}
@@ -58,7 +61,7 @@ export const BrandSelectorBanner: React.FC<BrandSelectorBannerProps> = ({
         <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
           <button
             onClick={onOpenModal}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] border border-pink-400/30"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] border border-pink-400/30"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
             Tùy Chỉnh Quy Tắc Brand
@@ -72,10 +75,10 @@ export const BrandSelectorBanner: React.FC<BrandSelectorBannerProps> = ({
           Chuyển nhanh Brand:
         </span>
         <div className="flex items-center gap-1.5">
-          {DEFAULT_BRAND_PRESETS.map((preset) => (
+          {brandList.map((preset) => (
             <button
               key={preset.id}
-              onClick={() => onQuickSelectPreset(preset.id)}
+              onClick={() => onSelectBrand(preset.id)}
               className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 whitespace-nowrap ${
                 activeBrand.id === preset.id
                   ? 'bg-pink-100 text-pink-900 border-pink-400 font-semibold shadow-xs'
@@ -86,6 +89,12 @@ export const BrandSelectorBanner: React.FC<BrandSelectorBannerProps> = ({
               {preset.name.split(' - ')[0]}
             </button>
           ))}
+          <button
+            onClick={onAddBrand}
+            className="text-xs px-2.5 py-1 rounded-lg border border-dashed border-pink-300 text-pink-700 bg-white hover:bg-pink-50 transition-all flex items-center gap-1 whitespace-nowrap"
+          >
+            <Plus className="w-3 h-3" /> Thêm brand
+          </button>
         </div>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { BrandProfile } from '../types';
 
+// Bốn thương hiệu Naris có sẵn khi mở app lần đầu. Người dùng vẫn sửa, thêm,
+// xoá hoặc nhập thương hiệu khác từ file JSON như bình thường.
 export const DEFAULT_BRAND_PRESETS: BrandProfile[] = [
   {
     id: 'parasola_naris',
@@ -72,6 +74,71 @@ Khám phá các sản phẩm chăm sóc da, chống nắng và trang điểm đ�
     customNotes: 'Tập trung vào cảm giác "kem tuyết" tan trên da và sự ráo thoáng trong khí hậu nóng ẩm.'
   }
 ];
+
+export const BRAND_FIELD_KEYS: (keyof BrandProfile)[] = [
+  'id', 'name', 'industry', 'tagline', 'targetAudience', 'speakerPersona',
+  'addressingSpeaker', 'addressingAudience', 'brandVoiceTone', 'coreUSPs',
+  'callToAction', 'forbiddenKeywords', 'customNotes', 'footerBlock', 'hashtags',
+];
+
+export const createBrandId = (): string => {
+  try {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `brand_${crypto.randomUUID()}`;
+  } catch {
+    // Trình duyệt cũ không có crypto.randomUUID.
+  }
+  return `brand_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+};
+
+export const createBlankBrand = (name = ''): BrandProfile => ({
+  id: createBrandId(),
+  name,
+  industry: '',
+  tagline: '',
+  targetAudience: '',
+  speakerPersona: '',
+  addressingSpeaker: 'Mình',
+  addressingAudience: 'Bạn',
+  brandVoiceTone: '',
+  coreUSPs: '',
+  callToAction: '',
+  forbiddenKeywords: '',
+  customNotes: '',
+  footerBlock: '',
+  hashtags: '',
+});
+
+// Ép dữ liệu lạ (import từ file JSON) về đúng hình dạng BrandProfile.
+export const normalizeBrand = (raw: unknown, fallbackName = 'Thương hiệu nhập khẩu'): BrandProfile | null => {
+  if (!raw || typeof raw !== 'object') return null;
+  const src = raw as Record<string, unknown>;
+  const str = (key: string): string => (typeof src[key] === 'string' ? (src[key] as string) : '');
+  const name = str('name').trim();
+  if (!name) return null;
+
+  const base = createBlankBrand(name);
+  return {
+    ...base,
+    id: str('id').trim() || base.id,
+    name: name || fallbackName,
+    industry: str('industry'),
+    tagline: str('tagline'),
+    targetAudience: str('targetAudience'),
+    speakerPersona: str('speakerPersona'),
+    addressingSpeaker: str('addressingSpeaker') || base.addressingSpeaker,
+    addressingAudience: str('addressingAudience') || base.addressingAudience,
+    brandVoiceTone: str('brandVoiceTone'),
+    coreUSPs: str('coreUSPs'),
+    callToAction: str('callToAction'),
+    forbiddenKeywords: str('forbiddenKeywords'),
+    customNotes: str('customNotes'),
+    footerBlock: str('footerBlock'),
+    hashtags: str('hashtags'),
+  };
+};
+
+// Danh sách mẫu hiện trong hộp thoại Brand DNA để chọn lại nhanh.
+export const SAMPLE_BRAND_PRESETS: BrandProfile[] = DEFAULT_BRAND_PRESETS;
 
 export const STORAGE_KEY_BRAND_PROFILES = 'cc_ai_brand_profiles_v2';
 export const STORAGE_KEY_ACTIVE_BRAND = 'cc_ai_active_brand_id_v2';

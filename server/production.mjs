@@ -7,14 +7,15 @@ import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  handleFetchVideo, handleLlm, handleGemini, sendJson,
+  handleFetchVideo, handleFetchSource, handleLlm, handleGemini, sendJson,
   applyCors, checkAccess, handlePreflight, serverInfo,
+  handleRadarSearch, handleRadarCreators, handleRadarCreatorVideos, handleRadarSuggest,
 } from './handlers.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '..', 'dist');
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 3100;
 const HOST = process.env.HOST || '0.0.0.0';
 const FALLBACK_KEY = process.env.GEMINI_API_KEY || '';
 
@@ -62,8 +63,13 @@ const server = createServer(async (req, res) => {
     }
 
     if (pathname === '/api/fetch-video') return await handleFetchVideo(req, res, FALLBACK_KEY);
+    if (pathname === '/api/fetch-source') return await handleFetchSource(req, res);
     if (pathname === '/api/llm') return await handleLlm(req, res);
     if (pathname === '/api/gemini') return await handleGemini(req, res, FALLBACK_KEY);
+    if (pathname === '/api/radar/search') return await handleRadarSearch(req, res, FALLBACK_KEY);
+    if (pathname === '/api/radar/suggest-keywords') return await handleRadarSuggest(req, res, FALLBACK_KEY);
+    if (pathname === '/api/radar/creators') return await handleRadarCreators(req, res);
+    if (pathname === '/api/radar/creator-videos') return await handleRadarCreatorVideos(req, res, FALLBACK_KEY);
     if (pathname === '/api/health') return sendJson(res, 200, serverInfo());
 
     // Any other /api path is a real 404, never the SPA shell - otherwise the
@@ -125,7 +131,7 @@ const start = async () => {
   });
 
   server.listen(PORT, HOST, () => {
-    console.log(`Naris Content Machine đang chạy tại http://localhost:${PORT}`);
+    console.log(`Content Machine đang chạy tại http://localhost:${PORT}`);
     if (!FALLBACK_KEY) {
       console.log('Chưa đặt GEMINI_API_KEY - người dùng sẽ tự dán API key ở mục Tích hợp.');
     }

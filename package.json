@@ -1,13 +1,21 @@
 {
-  "name": "copy-of-contentcreator-ai-analyst",
+  "name": "naris-content-machine",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "start": "node server/production.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test services/radar/radar.test.mjs services/zip.test.mjs server/douyinVideo.test.mjs",
+    "app": "npm run build && electron .",
+    "app:nobuild": "electron .",
+    "dist": "npm run build && electron-builder --win",
+    "vendor": "node scripts/fetch-vendor.mjs",
+    "predist": "node scripts/fetch-vendor.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.51.0",
@@ -20,7 +28,56 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "build": {
+    "appId": "com.naris.contentmachine",
+    "productName": "Naris Content Machine",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "dist/**",
+      "server/**",
+      "services/radar/**",
+      "package.json",
+      "build/icon.ico"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Naris Content Machine"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "extraResources": [
+      {
+        "from": "vendor",
+        "to": "vendor",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

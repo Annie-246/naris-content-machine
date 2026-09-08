@@ -23,8 +23,8 @@ RUN npm run build
 RUN chown -R node:node /app
 USER node
 
-ENV PORT=3000
+ENV PORT=3100
 ENV HOST=0.0.0.0
-EXPOSE 3000
+EXPOSE 3100
 
 CMD ["node", "server/production.mjs"]
