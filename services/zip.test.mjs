@@ -29,7 +29,16 @@ const expandArchive = async (zipPath, destination) => {
     return;
   }
   // macOS và Linux đều có sẵn unzip; -o ghi đè, -d chọn thư mục đích.
-  await execFileAsync('unzip', ['-o', zipPath, '-d', destination], { timeout: 60_000 });
+  //
+  // Với archive rỗng, unzip in cảnh báo "zipfile is empty" rồi thoát với mã 1
+  // dù file đúng chuẩn. Bài kiểm tra archive rỗng cần chạy tiếp qua trường hợp
+  // đó, còn archive có nội dung vẫn được kiểm bằng chính nội dung giải nén ra.
+  try {
+    await execFileAsync('unzip', ['-o', zipPath, '-d', destination], { timeout: 60_000 });
+  } catch (err) {
+    const output = `${err?.stdout || ''}${err?.stderr || ''}${err?.message || ''}`;
+    if (!/zipfile is empty/i.test(output)) throw err;
+  }
 };
 
 test('crc32 khớp giá trị chuẩn của chuỗi "123456789"', () => {
