@@ -17,11 +17,19 @@ import { zipFiles, crc32 } from './zip.mjs';
 const execFileAsync = promisify(execFile);
 const encoder = new TextEncoder();
 
+// Giải nén bằng công cụ sẵn có của hệ điều hành - mục đích của bài kiểm tra là
+// chứng minh file .zip do ta viết ra mở được bằng thứ người dùng thật sự dùng,
+// nên không thay bằng thư viện giải nén của Node.
 const expandArchive = async (zipPath, destination) => {
-  await execFileAsync('powershell.exe', [
-    '-NoProfile', '-NonInteractive', '-Command',
-    `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${destination}' -Force`,
-  ]);
+  if (process.platform === 'win32') {
+    await execFileAsync('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${destination}' -Force`,
+    ], { timeout: 60_000 });
+    return;
+  }
+  // macOS và Linux đều có sẵn unzip; -o ghi đè, -d chọn thư mục đích.
+  await execFileAsync('unzip', ['-o', zipPath, '-d', destination], { timeout: 60_000 });
 };
 
 test('crc32 khớp giá trị chuẩn của chuỗi "123456789"', () => {

@@ -48,11 +48,11 @@ jobs:
       - name: Tải yt-dlp và ffmpeg cho hệ điều hành này
         run: node scripts/fetch-vendor.mjs
 
-      # electronDist trỏ vào node_modules/electron/dist - đúng trên máy đã cài
-      # đặt sẵn, nhưng trên runner macOS thư mục đó có thể chưa giải nén, và
-      # electron-builder tự tải bản đúng kiến trúc nếu ta không ép đường dẫn.
-      - name: Gỡ electronDist trên macOS
-        if: matrix.os == 'macos-latest'
+      # electronDist là cách vá lỗi EPERM khi đóng gói trên máy Windows cá nhân,
+      # nơi Electron đã được giải nén sẵn. Trên runner sạch thì thư mục đó chưa
+      # tồn tại, mà electron-builder tự tải đúng bản cho từng nền tảng và kiến
+      # trúc, nên ở đây gỡ trường này ra.
+      - name: Gỡ electronDist
         run: node -e "const f='package.json',p=require('./'+f);delete p.build.electronDist;require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
 
       - name: Đóng gói
