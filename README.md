@@ -15,6 +15,7 @@ Mở app lần đầu đã có sẵn bốn thương hiệu: **Parasola by Naris 
 | **Content Creator** | Remake kịch bản video, phân tích sâu video, trích script, tạo kịch bản từ ý tưởng, remake bài viết, viết bài mới, phân tích sâu bài viết |
 | **Chấm điểm nội dung** | Chấm video và bài viết theo bộ tiêu chí bạn tự nạp, chỉ rõ từng chỗ mất điểm và cách sửa |
 | **Brand DNA** | Quản lý nhiều thương hiệu, học Brand DNA tự động từ nội dung có sẵn, xuất / nhập JSON |
+| **Danh mục sản phẩm** | Tải lên bảng sản phẩm của từng thương hiệu; mỗi lần chạy chọn sản phẩm cần nói tới để AI bám đúng tên, công dụng và thông số thay vì nói chung chung |
 | **Lịch sử nội dung** | Lưu lại mọi lần chạy, xem lại, xuất ra file |
 
 ## Tải app Windows và bắt đầu
@@ -22,10 +23,22 @@ Mở app lần đầu đã có sẵn bốn thương hiệu: **Parasola by Naris 
 Bản đóng gói sẵn nằm ở trang [Releases](https://github.com/Annie-246/naris-content-machine/releases/latest),
 không cần cài Node.js.
 
-1. **Tải**: kéo xuống mục *Assets*, bấm `Naris.Content.Machine.Setup.<phiên bản>.exe` (bản cài đặt, có shortcut)
-   hoặc `Naris.Content.Machine.<phiên bản>.exe` (chạy ngay, không cần cài). Trình duyệt hỏi giữ file thì chọn *Keep*.
-2. **Mở**: Windows hiện "Windows protected your PC" vì app chưa có chữ ký số. Bấm *More info* rồi *Run anyway*.
-   Bản Setup thì *Next* → *Install*.
+1. **Tải**: kéo xuống mục *Assets* rồi chọn đúng bản của máy bạn.
+
+   | Máy | File cần tải |
+   |---|---|
+   | Windows | `Naris.Content.Machine.Setup.<phiên bản>.exe` (bản cài, có shortcut) hoặc `Naris.Content.Machine.<phiên bản>.exe` (chạy ngay) |
+   | Mac chip Apple (M1/M2/M3/M4) | File `.dmg` có `arm64` trong tên |
+   | Mac chip Intel | File `.dmg` có `x64` trong tên |
+
+   Không rõ máy Mac của mình chip gì thì bấm  → *About This Mac*: dòng *Chip* ghi Apple M... là arm64,
+   ghi Intel là x64.
+
+2. **Mở lần đầu**: app chưa mua chữ ký số nên cả hai hệ điều hành đều cảnh báo một lần.
+
+   - **Windows**: hiện "Windows protected your PC" → bấm *More info* → *Run anyway*. Bản Setup thì *Next* → *Install*.
+   - **macOS**: mở file `.dmg`, kéo app vào thư mục Applications, rồi **chuột phải vào app → Open → Open**.
+     Bấm đúp như bình thường sẽ bị macOS chặn với thông báo app không xác định được nhà phát triển.
 3. **API key**: lấy key Gemini miễn phí tại https://aistudio.google.com/apikey, vào mục **Tích hợp** ở menu trái,
    dán vào ô Google Gemini rồi *Lưu*. Key chỉ lưu trên máy bạn.
 4. **Content Radar và video Douyin**: dán thêm API key [TikHub](https://user.tikhub.io/dashboard/api) ở mục
@@ -36,7 +49,7 @@ Bản đóng gói đã mang sẵn `yt-dlp` và `ffmpeg`, nên không phải cài
 
 ## Yêu cầu hệ thống
 
-**Dùng bản cài Windows**: không cần cài gì thêm. `yt-dlp.exe` và `ffmpeg.exe` nằm sẵn trong bộ cài
+**Dùng bản cài sẵn (Windows hoặc macOS)**: không cần cài gì thêm. `yt-dlp` và `ffmpeg` nằm sẵn trong bộ cài
 (`resources/vendor`), app tự tìm và dùng.
 
 **Chạy từ mã nguồn**:
@@ -80,13 +93,27 @@ npm start         # chạy máy chủ phục vụ dist/ và các API
 vừa xử lý `/api/*`. Không dùng `vite preview` để deploy: lệnh đó chỉ phục vụ file tĩnh, mọi tính năng
 gọi AI và tải video sẽ hỏng.
 
-## Đóng gói bản Windows
+## Đóng gói
 
 ```bash
-npm run dist      # tự chạy npm run vendor rồi electron-builder
+npm run dist      # bản Windows: tự chạy npm run vendor rồi electron-builder
+npm run dist:mac  # bản macOS - chỉ chạy được TRÊN máy macOS
 ```
 
-Kết quả nằm trong `release/`: một file Setup và một file portable.
+Kết quả nằm trong `release/`.
+
+**Bản macOS không dựng được từ Windows**: electron-builder cần chính macOS để tạo `.dmg`. Vì vậy
+[.github/workflows/release.yml](.github/workflows/release.yml) dựng cả hai bản trên máy của GitHub - đẩy một
+tag là xong:
+
+```bash
+git tag -a v1.0.1 -m "Naris Content Machine 1.0.1"
+git push origin v1.0.1
+```
+
+Workflow chạy test, build, tải `yt-dlp` + `ffmpeg` đúng hệ điều hành, đóng gói rồi đính kèm file vào
+trang Releases. App chưa ký chữ ký số (cần tài khoản Apple Developer 99$/năm cho macOS), nên người dùng
+phải bỏ qua cảnh báo một lần ở lần mở đầu tiên.
 
 ## Biến môi trường
 
@@ -122,6 +149,27 @@ Hai trường tùy chọn đáng chú ý trong form:
 - **Bộ Hashtag Mặc Định**: nếu để trống, AI tự đề xuất hashtag theo chủ đề.
 
 Dữ liệu Brand DNA lưu trong `localStorage` của trình duyệt, không gửi đi đâu ngoài prompt cho AI.
+
+## Danh mục sản phẩm
+
+Mục **14. Danh Mục Sản Phẩm** trong hộp thoại Brand DNA nhận file danh sách sản phẩm của thương hiệu:
+
+| Định dạng | Cách chuẩn bị |
+|---|---|
+| `.csv` / `.tsv` | Xuất từ Excel hoặc Google Sheet (*File → Download → CSV*). Dòng đầu là tên cột, cần có cột tên sản phẩm |
+| `.json` | File do chính app này xuất ra, dùng khi chuyển sang máy khác |
+| `.txt` / `.md` | Mỗi sản phẩm một khối, cách nhau bằng dòng trống, dòng đầu là tên |
+
+Cột nào cũng được giữ lại kèm tên cột, nên bảng có dung tích, giá, thành phần, đối tượng phù hợp thì AI
+đọc được hết. Tải lại đúng file đó lần nữa thì sản phẩm trùng tên được cập nhật chứ không nhân đôi.
+
+Khi chạy bất kỳ tính năng nào, ô **Sản phẩm nhắc tới trong bài** cho chọn sản phẩm liên quan:
+
+- **Có chọn**: prompt mang đầy đủ chi tiết của đúng những sản phẩm đó, kèm quy tắc cấm bịa thêm thông số.
+- **Không chọn**: AI chỉ nhận danh sách tên, đủ để không nhắc tới sản phẩm không tồn tại.
+
+Chọn đúng cái đang cần nói quan trọng với ngành mỹ phẩm: đổ cả danh mục vào thì bài viết ra loãng, mà
+thiếu chi tiết thì model dễ tự suy ra chỉ số chống nắng hay thành phần không có thật.
 
 ## Về API key
 
