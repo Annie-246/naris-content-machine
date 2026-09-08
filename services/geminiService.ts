@@ -1,4 +1,5 @@
 import { AnalysisMode, BrandProfile, ScriptFormula, FORMULA_LABELS, VideoMeta, WaterfallOptions, WATERFALL_OBJECTIVE_LABELS } from "../types";
+import { formatProductsForPrompt } from './productCatalog';
 import { getGeminiApiKey, resolveProvider } from "./apiKeyStore";
 import { postJson } from "./apiClient";
 
@@ -52,6 +53,7 @@ export const formatBrandGuidelines = (brand?: BrandProfile): string => {
   ${brand.footerBlock ? `- KHỐI FOOTER CỐ ĐỊNH (BẮT BUỘC CHÈN NGUYÊN VĂN Ở CUỐI BÀI ĐĂNG SOCIAL):
 ${brand.footerBlock}` : ''}
   =======================================================
+  ${formatProductsForPrompt(brand)}
   `;
 };
 

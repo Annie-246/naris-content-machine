@@ -43,10 +43,10 @@ const NavButton: React.FC<{
       aria-label={item.label}
       className={`relative w-full flex items-center transition-colors rounded-r-2xl
         ${compact ? 'justify-center px-0 py-3' : 'gap-4 pl-8 pr-4 py-3.5 text-left'}
-        ${active ? 'bg-[#FBE7F0] text-[#A4145E] font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+        ${active ? 'bg-[#FCE7F3] text-[#DB2777] font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
     >
-      {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[5px] rounded-r-full bg-[#A4145E]" />}
-      <Icon className={`w-5 h-5 shrink-0 ${active ? 'text-[#A4145E]' : 'text-slate-400'}`} />
+      {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[5px] rounded-r-full bg-[#DB2777]" />}
+      <Icon className={`w-5 h-5 shrink-0 ${active ? 'text-[#DB2777]' : 'text-slate-400'}`} />
       {!compact && (
         <>
           <span className="text-[15px] truncate">{item.label}</span>
@@ -171,7 +171,7 @@ export const Sidebar = ({
           className={`w-full flex items-center group ${compact ? 'justify-center' : 'gap-3 text-left'}`}
           title={compact ? `${teamName} · ${teamRole}` : undefined}
         >
-          <span className="w-10 h-10 rounded-full bg-[#A4145E] text-white flex items-center justify-center font-semibold shrink-0">
+          <span className="w-10 h-10 rounded-full bg-[#DB2777] text-white flex items-center justify-center font-semibold shrink-0">
             {teamName.charAt(0).toUpperCase()}
           </span>
           {!compact && (

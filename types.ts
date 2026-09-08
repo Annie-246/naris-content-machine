@@ -14,6 +14,22 @@ export enum AnalysisMode {
   CONTENT_WATERFALL = 'CONTENT_WATERFALL',
 }
 
+/**
+ * Một sản phẩm trong danh mục của thương hiệu.
+ *
+ * `details` cố tình để văn bản tự do: mỗi hãng mô tả sản phẩm một kiểu - nơi ghi
+ * thành phần và dung tích, nơi ghi công dụng và giá, nơi chép nguyên đoạn mô tả
+ * trên sàn. Ép vào khuôn cứng thì người nhập phải viết lại cả danh mục cho vừa
+ * cái form, mà thứ AI cần chỉ là chi tiết đúng của đúng sản phẩm đó.
+ */
+export interface BrandProduct {
+  id: string;
+  name: string;
+  /** Dòng sản phẩm, để lọc khi danh mục dài. */
+  line?: string;
+  details: string;
+}
+
 export interface BrandProfile {
   id: string;
   name: string;
@@ -32,6 +48,15 @@ export interface BrandProfile {
   footerBlock?: string;
   // Bộ hashtag mặc định gợi ý kèm bài đăng.
   hashtags?: string;
+  /**
+   * Danh mục sản phẩm của thương hiệu.
+   *
+   * Một hãng mỹ phẩm có hàng chục sản phẩm, mỗi cái một công dụng và một bộ
+   * thành phần riêng; AI chỉ có mô tả chung của thương hiệu thì hoặc viết chung
+   * chung, hoặc bịa thông số. Danh mục này lưu cùng Brand DNA, và mỗi lần chạy
+   * người dùng chọn ra sản phẩm liên quan để đưa vào prompt.
+   */
+  products?: BrandProduct[];
 }
 
 /**

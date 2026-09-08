@@ -121,7 +121,7 @@ export const ChecklistModal: React.FC<{
       <div className="w-full max-w-4xl max-h-[88vh] rounded-3xl bg-white shadow-2xl flex flex-col overflow-hidden">
         <div className="flex items-center justify-between gap-4 px-4 sm:px-7 py-4 sm:py-5 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
-            <ClipboardList className="w-5 h-5 text-[#A4145E]" />
+            <ClipboardList className="w-5 h-5 text-[#DB2777]" />
             <h2 className="text-lg font-bold text-slate-900">Bộ tiêu chí chấm điểm</h2>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
@@ -139,7 +139,7 @@ export const ChecklistModal: React.FC<{
                     value={editing.name}
                     onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                     placeholder="VD: Chấm bài bán hàng Facebook"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-[#A4145E] outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-[#DB2777] outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -147,7 +147,7 @@ export const ChecklistModal: React.FC<{
                   <select
                     value={editing.kind}
                     onChange={(e) => setEditing({ ...editing, kind: e.target.value as ScoringChecklist['kind'] })}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-[#A4145E] outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-[#DB2777] outline-none"
                   >
                     <option value="article">Bài viết</option>
                     <option value="video">Video</option>
@@ -162,7 +162,7 @@ export const ChecklistModal: React.FC<{
                   value={editing.description || ''}
                   onChange={(e) => setEditing({ ...editing, description: e.target.value })}
                   placeholder="VD: Dùng cho bài đăng chốt đơn, không dùng cho bài chia sẻ kiến thức"
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-[#A4145E] outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-[#DB2777] outline-none"
                 />
               </div>
 
@@ -171,7 +171,7 @@ export const ChecklistModal: React.FC<{
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <FileUp className="w-4 h-4 text-[#A4145E]" /> Nạp từ tài liệu có sẵn
+                      <FileUp className="w-4 h-4 text-[#DB2777]" /> Nạp từ tài liệu có sẵn
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       Đã có bộ tiêu chí trong file rồi thì tải lên đây, không cần gõ lại. Nhận PDF và
@@ -180,7 +180,7 @@ export const ChecklistModal: React.FC<{
                   </div>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="shrink-0 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] transition-colors"
+                    className="shrink-0 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] transition-colors"
                   >
                     Chọn tài liệu
                   </button>
@@ -205,11 +205,11 @@ export const ChecklistModal: React.FC<{
                         className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5"
                       >
                         {s.status === 'reading' ? (
-                          <Loader2 className="w-4 h-4 text-[#A4145E] animate-spin shrink-0" />
+                          <Loader2 className="w-4 h-4 text-[#DB2777] animate-spin shrink-0" />
                         ) : s.status === 'error' ? (
                           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                         ) : (
-                          <FileText className="w-4 h-4 text-[#A4145E] shrink-0" />
+                          <FileText className="w-4 h-4 text-[#DB2777] shrink-0" />
                         )}
                         <span className="flex-1 min-w-0">
                           <span className="block text-sm text-slate-800 truncate">{s.label}</span>
@@ -231,7 +231,7 @@ export const ChecklistModal: React.FC<{
                       <button
                         onClick={handleExtract}
                         disabled={isExtracting || !sources.some((s) => s.status === 'ready')}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:opacity-40 text-white text-sm font-semibold transition-colors"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:opacity-40 text-white text-sm font-semibold transition-colors"
                       >
                         {isExtracting ? (
                           <><Loader2 className="w-4 h-4 animate-spin" /> Đang đọc tài liệu...</>
@@ -243,7 +243,7 @@ export const ChecklistModal: React.FC<{
                         <button
                           onClick={handleInsertRaw}
                           disabled={isExtracting}
-                          className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] disabled:opacity-40 transition-colors"
+                          className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] disabled:opacity-40 transition-colors"
                         >
                           Chèn nguyên văn
                         </button>
@@ -277,7 +277,7 @@ export const ChecklistModal: React.FC<{
                   onChange={(e) => setEditing({ ...editing, criteria: e.target.value })}
                   rows={12}
                   placeholder={'VD:\n1. Hook trong 2 dòng đầu có chặn được người lướt không? (30 điểm)\n2. Có nêu rõ nỗi đau cụ thể của khách, không nói chung chung? (20 điểm)\n3. Có bằng chứng hoặc ví dụ thật, không hô khẩu hiệu? (20 điểm)\n4. CTA rõ ràng, dẫn tới một hành động duy nhất? (15 điểm)\n5. Trình bày dễ đọc trên điện thoại, đoạn ngắn? (15 điểm)\n\nTrừ điểm nếu: dùng từ sáo rỗng, bịa số liệu, sai giọng thương hiệu.'}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm leading-relaxed focus:border-[#A4145E] outline-none font-mono"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm leading-relaxed focus:border-[#DB2777] outline-none font-mono"
                 />
               </div>
 
@@ -285,7 +285,7 @@ export const ChecklistModal: React.FC<{
                 <button
                   onClick={handleSave}
                   disabled={!editing.name.trim() || !editing.criteria.trim()}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:opacity-40 text-white font-semibold transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:opacity-40 text-white font-semibold transition-colors"
                 >
                   <Save className="w-4 h-4" /> Lưu bộ tiêu chí
                 </button>
@@ -301,7 +301,7 @@ export const ChecklistModal: React.FC<{
             <>
               <button
                 onClick={startNew}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-[#A4145E] hover:text-[#A4145E] transition-colors font-semibold"
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-[#DB2777] hover:text-[#DB2777] transition-colors font-semibold"
               >
                 <Plus className="w-5 h-5" /> Tạo bộ tiêu chí mới
               </button>
@@ -336,7 +336,7 @@ export const ChecklistModal: React.FC<{
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => { resetImport(); setEditing(c); }}
-                            className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] transition-colors"
+                            className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] transition-colors"
                           >
                             Sửa
                           </button>

@@ -35,13 +35,6 @@ export const NarisLogo: React.FC<NarisLogoProps> = ({
         )}
       </div>
 
-      {variant !== 'compact' && (
-        <div className="flex items-center">
-          <span className="text-[10px] md:text-xs font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-pink-100 text-pink-700 border border-pink-200 shadow-xs">
-            Parasola Edition
-          </span>
-        </div>
-      )}
     </div>
   );
 };

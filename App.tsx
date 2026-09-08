@@ -60,6 +60,8 @@ import { WorkflowStepper, SectionCard, RunStatus } from './components/WorkspaceS
 import { getFeature } from './data/features';
 import { IntegrationsPanel } from './components/IntegrationsPanel';
 import { ChecklistModal } from './components/ChecklistModal';
+import { ProductPicker } from './components/ProductPicker';
+import { brandWithSelectedProducts } from './services/productCatalog';
 import { listChecklistsFor, getChecklist } from './services/checklistStore';
 import { OverviewIntro } from './components/OverviewIntro';
 import { getGeminiApiKey } from './services/apiKeyStore';
@@ -291,6 +293,11 @@ const App = () => {
   const [readComments, setReadComments] = useState(true);
   const [customUserPrompt, setCustomUserPrompt] = useState('');
   const [userInstructions, setUserInstructions] = useState('');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+
+  // Brand dùng cho lần chạy này: chọn sản phẩm nào thì prompt chỉ mang chi tiết
+  // của những sản phẩm đó, thay vì đổ cả danh mục vào rồi để model tự đoán.
+  const brandForRun = brandWithSelectedProducts(activeBrand, selectedProductIds);
   const [selectedFormula, setSelectedFormula] = useState<ScriptFormula>('auto');
   // Bộ tiêu chí chấm điểm đang chọn. Rỗng nghĩa là chấm theo Brand DNA và bộ
   // tiêu chí chuẩn của app.
@@ -599,7 +606,7 @@ const App = () => {
             customUserPrompt,
             undefined,
             undefined,
-            activeBrand,
+            brandForRun,
             userInstructions,
             selectedFormula
           );
@@ -736,7 +743,7 @@ const App = () => {
         isTextMode ? customUserPrompt : undefined,
         fileData?.sourceText,
         fileData?.url,
-        activeBrand,
+        brandForRun,
         userInstructions,
         selectedFormula,
         fileData?.fileUri,
@@ -991,15 +998,15 @@ const App = () => {
         {/* BACK TO LIBRARY */}
         <button
           onClick={() => setView('features')}
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#A4145E] transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-[#DB2777] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Quay lại Content Creator
         </button>
 
         {/* FEATURE HEADER */}
         <div className="flex flex-wrap items-start gap-5">
-          <div className="w-[68px] h-[68px] rounded-2xl bg-[#FDF2F7] border border-[#f8d3e0] flex items-center justify-center shrink-0">
-            <ActiveFeatureIcon className="w-9 h-9 text-[#A4145E]" strokeWidth={1.5} />
+          <div className="w-[68px] h-[68px] rounded-2xl bg-[#FDF2F8] border border-[#fbcfe8] flex items-center justify-center shrink-0">
+            <ActiveFeatureIcon className="w-9 h-9 text-[#DB2777]" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-[240px]">
             <h1 className="text-[24px] sm:text-[28px] lg:text-[34px] leading-tight font-bold text-slate-900">
@@ -1011,7 +1018,7 @@ const App = () => {
             <button
               onClick={handleAnalyze}
               disabled={loading.isLoading}
-              className="shrink-0 inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold transition-colors shadow-sm"
+              className="shrink-0 inline-flex items-center gap-2.5 px-8 py-4 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold transition-colors shadow-sm"
             >
               {loading.isLoading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Đang chạy...</>
@@ -1033,7 +1040,7 @@ const App = () => {
             </p>
             <button
               onClick={() => setView('features')}
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[#A4145E] text-[#A4145E] font-medium hover:bg-[#FDF2F7] transition-colors"
+              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[#DB2777] text-[#DB2777] font-medium hover:bg-[#FDF2F8] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> Quay lại Content Creator
             </button>
@@ -1065,14 +1072,14 @@ const App = () => {
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A4145E]" />
+                    <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#DB2777]" />
                     <input
                       type="text"
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleUrlFetch(); } }}
                       placeholder={featureConfig.linkPlaceholder}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:outline-none focus:border-[#A4145E] transition-colors placeholder:text-slate-400"
+                      className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:outline-none focus:border-[#DB2777] transition-colors placeholder:text-slate-400"
                       disabled={!!screenStream}
                     />
                   </div>
@@ -1093,12 +1100,12 @@ const App = () => {
                     type="checkbox"
                     checked={readComments}
                     onChange={(e) => setReadComments(e.target.checked)}
-                    className="w-3.5 h-3.5 accent-[#A4145E] cursor-pointer"
+                    className="w-3.5 h-3.5 accent-[#DB2777] cursor-pointer"
                     disabled={!!screenStream}
                   />
                   Đọc cả bình luận trong bài
                   {typeof fileData?.commentCount === 'number' && fileData.commentCount > 0 && (
-                    <span className="text-[#A4145E] font-medium">
+                    <span className="text-[#DB2777] font-medium">
                       · đã đọc {fileData.commentCount} bình luận
                     </span>
                   )}
@@ -1153,10 +1160,10 @@ const App = () => {
               {featureConfig.sources.includes('text') && (
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <PenTool className="w-3.5 h-3.5 text-[#A4145E]" /> {featureConfig.textLabel}
+                  <PenTool className="w-3.5 h-3.5 text-[#DB2777]" /> {featureConfig.textLabel}
                 </label>
                 <textarea
-                  className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#A4145E] outline-none h-40 resize-none custom-scrollbar placeholder:text-slate-400"
+                  className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#DB2777] outline-none h-40 resize-none custom-scrollbar placeholder:text-slate-400"
                   placeholder={featureConfig.textPlaceholder}
                   value={customUserPrompt}
                   onChange={(e) => setCustomUserPrompt(e.target.value)}
@@ -1168,7 +1175,7 @@ const App = () => {
               {featureConfig.sources.includes('images') && (
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <FileImage className="w-3.5 h-3.5 text-[#A4145E]" /> Ảnh chụp bài viết (chọn được nhiều ảnh)
+                  <FileImage className="w-3.5 h-3.5 text-[#DB2777]" /> Ảnh chụp bài viết (chọn được nhiều ảnh)
                 </label>
                 <div className="relative border border-dashed border-pink-300 rounded-xl p-4 bg-pink-50/40 hover:bg-pink-50/70 transition-colors text-center">
                   <input
@@ -1190,10 +1197,10 @@ const App = () => {
                     every screenshot twice. */}
                 <div
                   tabIndex={0}
-                  className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-3 text-center cursor-text transition-colors outline-none focus:border-[#A4145E] focus:bg-[#FDF2F7] hover:border-slate-400"
+                  className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-3 text-center cursor-text transition-colors outline-none focus:border-[#DB2777] focus:bg-[#FDF2F8] hover:border-slate-400"
                 >
                   <div className="flex items-center justify-center gap-2 text-slate-600">
-                    <ClipboardPaste className="w-4 h-4 text-[#A4145E]" />
+                    <ClipboardPaste className="w-4 h-4 text-[#DB2777]" />
                     <span className="text-xs font-semibold">Hoặc bấm vào ô này rồi Ctrl+V để dán ảnh</span>
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1241,7 +1248,7 @@ const App = () => {
                     {fileData.previewUrl && !fileData.videoMeta && (
                       <button
                         onClick={downloadCurrentFile}
-                        className="bg-[#A4145E] hover:bg-[#86104D] text-white p-1.5 rounded-full transition-all shadow-md"
+                        className="bg-[#DB2777] hover:bg-[#BE185D] text-white p-1.5 rounded-full transition-all shadow-md"
                         title="Tải về máy"
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -1285,7 +1292,7 @@ const App = () => {
                     </div>
                   ) : fileData.sourceText ? (
                     <div className="p-3.5 space-y-2">
-                      <div className="flex items-center gap-1.5 text-[#A4145E]">
+                      <div className="flex items-center gap-1.5 text-[#DB2777]">
                         <FileCheck2 className="w-4 h-4" />
                         <span className="text-[11px] font-bold uppercase tracking-wide">Đã đọc nội dung</span>
                       </div>
@@ -1339,11 +1346,11 @@ const App = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <ClipboardList className="w-3.5 h-3.5 text-[#A4145E]" /> Bộ tiêu chí chấm điểm
+                    <ClipboardList className="w-3.5 h-3.5 text-[#DB2777]" /> Bộ tiêu chí chấm điểm
                   </label>
                   <button
                     onClick={() => setIsChecklistOpen(true)}
-                    className="text-xs font-semibold text-[#A4145E] hover:underline"
+                    className="text-xs font-semibold text-[#DB2777] hover:underline"
                   >
                     Quản lý bộ tiêu chí
                   </button>
@@ -1351,7 +1358,7 @@ const App = () => {
                 <select
                   value={selectedChecklistId}
                   onChange={(e) => setSelectedChecklistId(e.target.value)}
-                  className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#A4145E] outline-none"
+                  className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#DB2777] outline-none"
                 >
                   <option value="">Để hệ thống AI tự chấm điểm</option>
                   {availableChecklists.map((c) => (
@@ -1375,12 +1382,12 @@ const App = () => {
               || selectedMode === AnalysisMode.ARTICLE_WRITING) && (
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Sigma className="w-3.5 h-3.5 text-[#A4145E]" /> Cấu trúc / công thức triển khai
+                  <Sigma className="w-3.5 h-3.5 text-[#DB2777]" /> Cấu trúc / công thức triển khai
                 </label>
                 <select
                   value={selectedFormula}
                   onChange={(e) => setSelectedFormula(e.target.value as ScriptFormula)}
-                  className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#A4145E] outline-none"
+                  className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#DB2777] outline-none"
                 >
                   {(Object.keys(FORMULA_LABELS) as ScriptFormula[]).map((f) => (
                     <option key={f} value={f}>{FORMULA_LABELS[f]}</option>
@@ -1389,13 +1396,19 @@ const App = () => {
               </div>
             )}
 
+            <ProductPicker
+              products={activeBrand.products || []}
+              selectedIds={selectedProductIds}
+              onChange={setSelectedProductIds}
+            />
+
             {/* Extra Instructions */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <FilePenLine className="w-3.5 h-3.5 text-[#A4145E]" /> Yêu cầu bổ sung (tùy chọn)
+                <FilePenLine className="w-3.5 h-3.5 text-[#DB2777]" /> Yêu cầu bổ sung (tùy chọn)
               </label>
               <textarea
-                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#A4145E] outline-none h-24 resize-none custom-scrollbar placeholder:text-slate-400"
+                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#DB2777] outline-none h-24 resize-none custom-scrollbar placeholder:text-slate-400"
                 placeholder="VD: Nhấn mạnh sản phẩm chủ lực, thời lượng dưới 60s, giữ đúng xưng hô của brand..."
                 value={userInstructions}
                 onChange={(e) => setUserInstructions(e.target.value)}
@@ -1467,7 +1480,7 @@ const App = () => {
               </button>
               <button
                 onClick={copyToClipboard}
-                className="text-xs flex items-center gap-1.5 text-white bg-[#A4145E] hover:bg-[#86104D] px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                className="text-xs flex items-center gap-1.5 text-white bg-[#DB2777] hover:bg-[#BE185D] px-3 py-1.5 rounded-lg font-semibold transition-colors"
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Đã copy' : 'Copy'}
@@ -1525,7 +1538,7 @@ const App = () => {
                       <label className="text-xs uppercase text-slate-700 font-bold">2. Tiêu đề chữ nổi trên thumbnail</label>
                       <input
                         type="text"
-                        className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 focus:border-[#A4145E] outline-none"
+                        className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 focus:border-[#DB2777] outline-none"
                         placeholder={activeBrand.tagline || 'VD: 1 CHẠM - 12H BẢO VỆ CHUẨN NHẬT...'}
                         value={thumbnailText}
                         onChange={(e) => setThumbnailText(e.target.value)}
@@ -1537,13 +1550,13 @@ const App = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button
                           onClick={() => setAspectRatio('16:9')}
-                          className={`py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '16:9' ? 'bg-[#A4145E] border-[#A4145E] text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                          className={`py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '16:9' ? 'bg-[#DB2777] border-[#DB2777] text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                         >
                           16:9 (YouTube)
                         </button>
                         <button
                           onClick={() => setAspectRatio('9:16')}
-                          className={`py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '9:16' ? 'bg-[#A4145E] border-[#A4145E] text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                          className={`py-2.5 rounded-lg border text-xs font-semibold transition-all ${aspectRatio === '9:16' ? 'bg-[#DB2777] border-[#DB2777] text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                         >
                           9:16 (TikTok / Reels)
                         </button>
@@ -1585,8 +1598,8 @@ const App = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-14">
-              <div className="w-14 h-14 rounded-2xl bg-[#FDF2F7] border border-[#f8d3e0] flex items-center justify-center mb-3">
-                <Sparkles className="w-7 h-7 text-[#A4145E]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#FDF2F8] border border-[#fbcfe8] flex items-center justify-center mb-3">
+                <Sparkles className="w-7 h-7 text-[#DB2777]" />
               </div>
               <h4 className="text-sm font-bold text-slate-800">Chưa có kết quả</h4>
               <p className="text-xs text-slate-500 max-w-sm mt-1 leading-relaxed">

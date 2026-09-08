@@ -176,7 +176,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
       <div className="flex items-start justify-between gap-5 flex-wrap">
         <div>
           <h1 className="text-[40px] leading-tight font-bold text-slate-900 flex items-center gap-3">
-            <History className="w-9 h-9 text-[#A4145E]" strokeWidth={1.5} /> Lịch sử nội dung
+            <History className="w-9 h-9 text-[#DB2777]" strokeWidth={1.5} /> Lịch sử nội dung
           </h1>
           <p className="mt-3 text-[15px] text-slate-600 max-w-2xl leading-relaxed">
             Mọi nội dung bạn tạo được lưu lại ngay trên máy này. Phần chữ giữ <strong>7 ngày</strong>, hình ảnh giữ{' '}
@@ -208,7 +208,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
           <button
             onClick={handleBackupAll}
             disabled={!!busy || !entries.length}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold transition-colors"
           >
             {busy === 'drive' ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
             {busy === 'drive' ? 'Đang đẩy lên Drive…' : 'Đẩy hết qua Google Drive'}
@@ -217,7 +217,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
           <button
             onClick={handleDownloadAll}
             disabled={!!busy || !visible.length}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-medium hover:border-[#A4145E] hover:text-[#A4145E] disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-200 text-slate-700 font-medium hover:border-[#DB2777] hover:text-[#DB2777] disabled:opacity-50 transition-colors"
           >
             {busy === 'zip' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Tải tất cả về máy (.zip)
@@ -245,7 +245,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
           <div className="mt-3">
             <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
               <div
-                className="h-full bg-[#A4145E] transition-all duration-300"
+                className="h-full bg-[#DB2777] transition-all duration-300"
                 style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
               />
             </div>
@@ -275,7 +275,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tìm trong lịch sử…"
-            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors"
+            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors"
           />
         </div>
 
@@ -285,7 +285,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
               key={filter.id}
               onClick={() => setKind(filter.id)}
               className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
-                kind === filter.id ? 'bg-[#FDF2F7] text-[#A4145E]' : 'text-slate-500 hover:text-slate-800'
+                kind === filter.id ? 'bg-[#FDF2F8] text-[#DB2777]' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               {filter.label}
@@ -295,7 +295,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
 
         <button
           onClick={() => setScope((prev) => (prev === 'brand' ? 'all' : 'brand'))}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-medium text-slate-600 hover:border-[#A4145E] hover:text-[#A4145E] transition-colors"
+          className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-medium text-slate-600 hover:border-[#DB2777] hover:text-[#DB2777] transition-colors"
         >
           {scope === 'brand' ? `Chỉ ${brand.name}` : 'Tất cả thương hiệu'}
         </button>
@@ -334,11 +334,11 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
           return (
             <div
               key={entry.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#f8d3e0] transition-colors"
+              className="rounded-2xl border border-slate-200 bg-white p-5 hover:border-[#fbcfe8] transition-colors"
             >
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-[#FDF2F7] border border-[#f8d3e0] flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-[#A4145E]" />
+                <div className="w-11 h-11 rounded-xl bg-[#FDF2F8] border border-[#fbcfe8] flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-[#DB2777]" />
                 </div>
 
                 <button onClick={() => setOpened(entry)} className="flex-1 min-w-0 text-left">
@@ -379,7 +379,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Mở bản lưu trên Drive"
-                      className="p-2.5 rounded-xl text-slate-400 hover:text-[#A4145E] hover:bg-[#FDF2F7] transition-colors"
+                      className="p-2.5 rounded-xl text-slate-400 hover:text-[#DB2777] hover:bg-[#FDF2F8] transition-colors"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
@@ -387,7 +387,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
                   <button
                     onClick={() => downloadEntry(entry, getAsset)}
                     title="Tải nội dung này về máy"
-                    className="p-2.5 rounded-xl text-slate-400 hover:text-[#A4145E] hover:bg-[#FDF2F7] transition-colors"
+                    className="p-2.5 rounded-xl text-slate-400 hover:text-[#DB2777] hover:bg-[#FDF2F8] transition-colors"
                   >
                     <Download className="w-4 h-4" />
                   </button>
@@ -424,7 +424,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
               </div>
               <button
                 onClick={() => downloadEntry(opened, getAsset)}
-                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] transition-colors"
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-[13px] font-medium text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] transition-colors"
               >
                 <Download className="w-4 h-4" /> Tải về
               </button>
@@ -442,7 +442,7 @@ export const HistoryPanel: React.FC<{ brand: BrandProfile }> = ({ brand }) => {
                   href={opened.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 mb-4 text-[13px] text-[#A4145E] hover:underline break-all"
+                  className="inline-flex items-center gap-1.5 mb-4 text-[13px] text-[#DB2777] hover:underline break-all"
                 >
                   <ExternalLink className="w-3.5 h-3.5 shrink-0" /> {opened.sourceUrl}
                 </a>

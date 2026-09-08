@@ -6,8 +6,8 @@ import { formatCount, formatDuration, formatRelativeTime } from '../services/rad
 // Score bands, so a strong find reads as strong at a glance instead of being one
 // number among many.
 const scoreTone = (score: number): string => {
-  if (score >= 70) return 'bg-[#A4145E] text-white border-[#A4145E]';
-  if (score >= 45) return 'bg-[#FDF2F7] text-[#A4145E] border-[#f8d3e0]';
+  if (score >= 70) return 'bg-[#DB2777] text-white border-[#DB2777]';
+  if (score >= 45) return 'bg-[#FDF2F8] text-[#DB2777] border-[#fbcfe8]';
   return 'bg-slate-50 text-slate-500 border-slate-200';
 };
 
@@ -57,7 +57,7 @@ export const RadarContentCard: React.FC<{ content: RadarContent }> = ({ content 
   const { creator, metrics } = content;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 flex gap-4 hover:border-[#f0c9d8] hover:shadow-sm transition-all">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 flex gap-4 hover:border-[#fbcfe8] hover:shadow-sm transition-all">
       <Thumbnail url={content.thumbnailUrl} duration={content.duration} />
 
       <div className="flex-1 min-w-0 flex flex-col">
@@ -130,7 +130,7 @@ export const RadarContentCard: React.FC<{ content: RadarContent }> = ({ content 
             href={content.videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#A4145E] hover:underline shrink-0"
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#DB2777] hover:underline shrink-0"
           >
             Xem video gốc <ExternalLink className="w-3.5 h-3.5" />
           </a>

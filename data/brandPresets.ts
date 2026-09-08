@@ -1,4 +1,4 @@
-import { BrandProfile } from '../types';
+import { BrandProduct, BrandProfile } from '../types';
 
 // Bốn thương hiệu Naris có sẵn khi mở app lần đầu. Người dùng vẫn sửa, thêm,
 // xoá hoặc nhập thương hiệu khác từ file JSON như bình thường.
@@ -79,6 +79,7 @@ export const BRAND_FIELD_KEYS: (keyof BrandProfile)[] = [
   'id', 'name', 'industry', 'tagline', 'targetAudience', 'speakerPersona',
   'addressingSpeaker', 'addressingAudience', 'brandVoiceTone', 'coreUSPs',
   'callToAction', 'forbiddenKeywords', 'customNotes', 'footerBlock', 'hashtags',
+  'products',
 ];
 
 export const createBrandId = (): string => {
@@ -106,7 +107,37 @@ export const createBlankBrand = (name = ''): BrandProfile => ({
   customNotes: '',
   footerBlock: '',
   hashtags: '',
+  products: [],
 });
+
+export const createProductId = (): string => {
+  try {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `sp_${crypto.randomUUID()}`;
+  } catch {
+    // Trình duyệt cũ không có crypto.randomUUID.
+  }
+  return `sp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+};
+
+/** Ép danh mục sản phẩm lạ về đúng hình dạng, bỏ các dòng không có tên. */
+export const normalizeProducts = (raw: unknown): BrandProduct[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): BrandProduct | null => {
+      if (!item || typeof item !== 'object') return null;
+      const src = item as Record<string, unknown>;
+      const str = (key: string): string => (typeof src[key] === 'string' ? (src[key] as string).trim() : '');
+      const name = str('name');
+      if (!name) return null;
+      return {
+        id: str('id') || createProductId(),
+        name,
+        line: str('line'),
+        details: str('details'),
+      };
+    })
+    .filter((p): p is BrandProduct => p !== null);
+};
 
 // Ép dữ liệu lạ (import từ file JSON) về đúng hình dạng BrandProfile.
 export const normalizeBrand = (raw: unknown, fallbackName = 'Thương hiệu nhập khẩu'): BrandProfile | null => {
@@ -134,6 +165,7 @@ export const normalizeBrand = (raw: unknown, fallbackName = 'Thương hiệu nh�
     customNotes: str('customNotes'),
     footerBlock: str('footerBlock'),
     hashtags: str('hashtags'),
+    products: normalizeProducts(src.products),
   };
 };
 

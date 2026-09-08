@@ -7,7 +7,7 @@ import { formatCount } from '../services/radarService';
 // costs nothing, and the copy says "trong kết quả này" so the numbers are not
 // mistaken for whole-channel statistics.
 export const RadarCreatorCard: React.FC<{ creator: RadarCreatorSummary }> = ({ creator }) => (
-  <article className="rounded-2xl border border-slate-200 bg-white p-4 hover:border-[#f0c9d8] hover:shadow-sm transition-all">
+  <article className="rounded-2xl border border-slate-200 bg-white p-4 hover:border-[#fbcfe8] hover:shadow-sm transition-all">
     <div className="flex items-center gap-3">
       {creator.avatarUrl ? (
         <img
@@ -32,7 +32,7 @@ export const RadarCreatorCard: React.FC<{ creator: RadarCreatorSummary }> = ({ c
       </div>
 
       <span
-        className="shrink-0 px-2.5 py-1 rounded-lg border border-[#f8d3e0] bg-[#FDF2F7] text-[#A4145E] text-[13px] font-bold tabular-nums"
+        className="shrink-0 px-2.5 py-1 rounded-lg border border-[#fbcfe8] bg-[#FDF2F8] text-[#DB2777] text-[13px] font-bold tabular-nums"
         title="Radar Score cao nhất trong kết quả này"
       >
         {Math.round(creator.bestRadarScore)}
@@ -75,7 +75,7 @@ export const RadarCreatorCard: React.FC<{ creator: RadarCreatorSummary }> = ({ c
           href={creator.bestContent.videoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#A4145E] hover:underline"
+          className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#DB2777] hover:underline"
         >
           Xem video gốc <ExternalLink className="w-3.5 h-3.5" />
         </a>
@@ -87,7 +87,7 @@ export const RadarCreatorCard: React.FC<{ creator: RadarCreatorSummary }> = ({ c
         href={creator.profileUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-[#A4145E] transition-colors"
+        className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-slate-500 hover:text-[#DB2777] transition-colors"
       >
         Trang cá nhân <ExternalLink className="w-3 h-3" />
       </a>

@@ -39,10 +39,10 @@ const CapabilityButtons: React.FC<{
             title={reason}
             className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-colors
               ${isAssigned && !blocked
-                ? 'bg-[#A4145E] border-[#A4145E] text-white'
+                ? 'bg-[#DB2777] border-[#DB2777] text-white'
                 : blocked
                   ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E]'}`}
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777]'}`}
           >
             {isAssigned && !blocked ? <Check className="w-3.5 h-3.5" /> : !canDo ? <Ban className="w-3.5 h-3.5" /> : null}
             {cap.label}
@@ -196,7 +196,7 @@ export const IntegrationsPanel = () => {
             <div
               key={provider.id}
               className={`rounded-2xl border p-6 transition-colors ${
-                isInUse ? 'border-[#A4145E] bg-[#FDF2F7]/40' : 'border-slate-200 bg-white'
+                isInUse ? 'border-[#DB2777] bg-[#FDF2F8]/40' : 'border-slate-200 bg-white'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -204,7 +204,7 @@ export const IntegrationsPanel = () => {
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <h2 className="text-lg font-bold text-slate-900">{provider.name}</h2>
                     {isInUse && (
-                      <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-[#A4145E] text-white">
+                      <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-[#DB2777] text-white">
                         Đang dùng
                       </span>
                     )}
@@ -226,7 +226,7 @@ export const IntegrationsPanel = () => {
                   href={provider.docsUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#A4145E] transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#DB2777] transition-colors"
                 >
                   Lấy key <ExternalLink className="w-3.5 h-3.5" />
                 </a>
@@ -262,12 +262,12 @@ export const IntegrationsPanel = () => {
                   onChange={(e) => setDrafts((d) => ({ ...d, [provider.id]: e.target.value }))}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveKey(provider.id)}
                   placeholder={storedKey ? 'Dán key mới để thay thế...' : `Dán API key (${provider.keyPrefix}...)`}
-                  className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors font-mono"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors font-mono"
                 />
                 <button
                   onClick={() => handleSaveKey(provider.id)}
                   disabled={!draft.trim()}
-                  className="shrink-0 px-6 py-3 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-colors"
+                  className="shrink-0 px-6 py-3 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-colors"
                 >
                   {saved === provider.id ? <Check className="w-4 h-4" /> : 'Lưu'}
                 </button>
@@ -294,7 +294,7 @@ export const IntegrationsPanel = () => {
                     <input
                       value={settings.models[provider.id] ?? provider.defaultModel}
                       onChange={(e) => handleModelChange(provider.id, e.target.value)}
-                      className="w-56 rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-slate-700 focus:outline-none focus:border-[#A4145E] transition-colors"
+                      className="w-56 rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-slate-700 focus:outline-none focus:border-[#DB2777] transition-colors"
                       title="Tên model dùng cho nhà cung cấp này"
                     />
                   </div>
@@ -302,7 +302,7 @@ export const IntegrationsPanel = () => {
                   <button
                     onClick={() => handleTest(provider.id)}
                     disabled={test.status === 'testing'}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:border-[#A4145E] text-sm font-medium text-slate-700 hover:text-[#A4145E] transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:border-[#DB2777] text-sm font-medium text-slate-700 hover:text-[#DB2777] transition-colors disabled:opacity-50"
                   >
                     {test.status === 'testing' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     Kiểm tra kết nối

@@ -88,7 +88,7 @@
 .analysis-output li { margin: 0.25rem 0; }
 
 .analysis-output a {
-  color: #A4145E;
+  color: #DB2777;
   text-decoration: underline;
 }
 
@@ -107,7 +107,7 @@
   margin: 0.75rem 0;
   padding: 0.5rem 0.875rem;
   border-left: 3px solid #fca5a5;
-  background: #FDF2F7;
+  background: #FDF2F8;
   border-radius: 0 0.5rem 0.5rem 0;
 }
 

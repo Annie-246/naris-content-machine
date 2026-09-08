@@ -11,7 +11,7 @@ import {
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 ' +
-  'placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors font-mono';
+  'placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors font-mono';
 
 export const GoogleDrivePanel: React.FC = () => {
   const [clientId, setClientIdState] = useState(() => getGoogleClientId());
@@ -70,7 +70,7 @@ export const GoogleDrivePanel: React.FC = () => {
   return (
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex items-center gap-2.5 mb-1.5">
-        <HardDrive className="w-5 h-5 text-[#A4145E]" />
+        <HardDrive className="w-5 h-5 text-[#DB2777]" />
         <h2 className="text-lg font-bold text-slate-900">Google Drive</h2>
       </div>
       <p className="text-sm text-slate-600 leading-relaxed">
@@ -101,7 +101,7 @@ export const GoogleDrivePanel: React.FC = () => {
             href="https://console.cloud.google.com/apis/credentials"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#A4145E] hover:underline"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#DB2777] hover:underline"
           >
             Tạo Client ID <ExternalLink className="w-3.5 h-3.5" />
           </a>
@@ -132,7 +132,7 @@ export const GoogleDrivePanel: React.FC = () => {
             <button
               onClick={saveClientId}
               disabled={!draft.trim()}
-              className="shrink-0 px-6 py-3 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium transition-colors"
+              className="shrink-0 px-6 py-3 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium transition-colors"
             >
               Lưu
             </button>
@@ -173,7 +173,7 @@ export const GoogleDrivePanel: React.FC = () => {
             <button
               onClick={handleConnect}
               disabled={busy || !clientId}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold transition-colors"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
               {busy ? 'Đang mở Google…' : 'Kết nối Google Drive'}
@@ -214,7 +214,7 @@ export const GoogleDrivePanel: React.FC = () => {
             type="checkbox"
             checked={autoBackup}
             onChange={(e) => { setAutoBackup(e.target.checked); setAutoBackupEnabled(e.target.checked); }}
-            className="mt-0.5 w-4 h-4 accent-[#A4145E] cursor-pointer"
+            className="mt-0.5 w-4 h-4 accent-[#DB2777] cursor-pointer"
           />
           <span className="text-[13px] text-slate-700 leading-relaxed">
             Mỗi nội dung tạo xong tự đẩy lên Drive dưới dạng Google Docs, chạy ngầm và không làm chậm gì.

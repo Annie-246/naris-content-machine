@@ -142,7 +142,7 @@ export const ResizeHandle: React.FC<{
   >
     <span
       className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-[3px] rounded-full transition-colors
-        ${dragging ? 'bg-[#A4145E]' : 'bg-transparent group-hover:bg-[#f0c9d8]'}`}
+        ${dragging ? 'bg-[#DB2777]' : 'bg-transparent group-hover:bg-[#fbcfe8]'}`}
     />
   </div>
 );
@@ -163,7 +163,7 @@ export const CollapseButton: React.FC<{
       onClick={onClick}
       title={collapsed ? 'Mở rộng thanh' : 'Thu gọn thành icon'}
       aria-label={collapsed ? 'Mở rộng thanh' : 'Thu gọn thành icon'}
-      className={`p-2 rounded-lg text-slate-400 hover:text-[#A4145E] hover:bg-[#FDF2F7] transition-colors ${className}`}
+      className={`p-2 rounded-lg text-slate-400 hover:text-[#DB2777] hover:bg-[#FDF2F8] transition-colors ${className}`}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
         <rect x="3" y="3" width="18" height="18" rx="2" />

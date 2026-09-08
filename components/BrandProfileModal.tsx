@@ -3,6 +3,7 @@ import { X, Sparkles, Check, Building2, MessageSquare, Volume2, ShieldAlert, Tar
 import { BrandProfile } from '../types';
 import { SAMPLE_BRAND_PRESETS, normalizeBrand } from '../data/brandPresets';
 import { BrandLearnModal } from './BrandLearnModal';
+import { ProductCatalogPanel } from './ProductCatalogPanel';
 
 interface BrandProfileModalProps {
   isOpen: boolean;
@@ -46,6 +47,10 @@ export const BrandProfileModal: React.FC<BrandProfileModalProps> = ({
 
   const handleChange = (key: keyof BrandProfile, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleProductsChange = (products: BrandProfile['products']) => {
+    setFormData(prev => ({ ...prev, products }));
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -127,7 +132,7 @@ export const BrandProfileModal: React.FC<BrandProfileModalProps> = ({
           </button>
         </div>
 
-        <div className="px-4 sm:px-6 py-3.5 bg-[#A4145E] border-b border-[#86104D] flex flex-wrap items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-3.5 bg-[#DB2777] border-b border-[#BE185D] flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-bold text-white uppercase tracking-wider">Chưa biết điền gì?</p>
             <p className="text-[11px] text-white/80 mt-0.5">
@@ -137,7 +142,7 @@ export const BrandProfileModal: React.FC<BrandProfileModalProps> = ({
           <button
             type="button"
             onClick={() => setIsLearnOpen(true)}
-            className="px-4 py-2 text-sm font-bold text-[#A4145E] bg-white hover:bg-white/90 rounded-lg shadow-sm flex items-center gap-2 transition-all active:scale-95 shrink-0"
+            className="px-4 py-2 text-sm font-bold text-[#DB2777] bg-white hover:bg-white/90 rounded-lg shadow-sm flex items-center gap-2 transition-all active:scale-95 shrink-0"
           >
             <Wand2 className="w-4 h-4" /> Học từ nguồn thật
           </button>
@@ -268,6 +273,11 @@ export const BrandProfileModal: React.FC<BrandProfileModalProps> = ({
               <textarea rows={4} value={formData.hashtags || ''} onChange={(e) => handleChange('hashtags', e.target.value)} placeholder="VD: #TenThuongHieu #ChienDich2025 #TuKhoaNganh" className={`${INPUT_CLASS} resize-none font-mono text-xs`} />
             </div>
           </div>
+
+          <ProductCatalogPanel
+            products={formData.products || []}
+            onChange={handleProductsChange}
+          />
 
           {importError && (
             <p className="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{importError}</p>

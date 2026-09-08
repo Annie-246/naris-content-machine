@@ -49,10 +49,10 @@ export const FeatureRail: React.FC<{
               aria-label={feature.title}
               className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors border
                 ${active
-                  ? 'bg-[#fef7f8] border-[#A4145E]'
-                  : 'bg-white border-transparent hover:bg-[#FDF2F7]'}`}
+                  ? 'bg-[#fdf2f8] border-[#DB2777]'
+                  : 'bg-white border-transparent hover:bg-[#FDF2F8]'}`}
             >
-              <Icon className="w-[21px] h-[21px] text-[#A4145E]" strokeWidth={1.75} />
+              <Icon className="w-[21px] h-[21px] text-[#DB2777]" strokeWidth={1.75} />
             </button>
           );
         })}
@@ -90,9 +90,9 @@ export const FeatureRail: React.FC<{
                 key={id}
                 onClick={() => setTab(id)}
                 className={`inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors
-                  ${active ? 'bg-white border border-[#A4145E] text-[#A4145E] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  ${active ? 'bg-white border border-[#DB2777] text-[#DB2777] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#A4145E]' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#DB2777]' : 'text-slate-400'}`} />
                 <span className="truncate">{label}</span>
               </button>
             );
@@ -105,7 +105,7 @@ export const FeatureRail: React.FC<{
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tìm tính năng..."
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors"
           />
         </div>
 
@@ -121,14 +121,14 @@ export const FeatureRail: React.FC<{
                   onClick={() => onSelect(feature.mode)}
                   className={`group w-full text-left rounded-2xl border p-3.5 transition-all flex gap-3
                     ${active
-                      ? 'border-[#A4145E] bg-[#fef7f8] shadow-sm'
-                      : 'border-slate-200 bg-white hover:border-[#f0c9d8] hover:shadow-sm'}`}
+                      ? 'border-[#DB2777] bg-[#fdf2f8] shadow-sm'
+                      : 'border-slate-200 bg-white hover:border-[#fbcfe8] hover:shadow-sm'}`}
                 >
                   <span
                     className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
-                      ${active ? 'bg-white border border-[#f8d3e0]' : 'bg-[#FDF2F7]'}`}
+                      ${active ? 'bg-white border border-[#fbcfe8]' : 'bg-[#FDF2F8]'}`}
                   >
-                    <Icon className="w-5 h-5 text-[#A4145E]" strokeWidth={1.75} />
+                    <Icon className="w-5 h-5 text-[#DB2777]" strokeWidth={1.75} />
                   </span>
 
                   <span className="flex-1 min-w-0">
@@ -145,9 +145,9 @@ export const FeatureRail: React.FC<{
 
                   <span className="shrink-0 self-center">
                     {active ? (
-                      <CheckCircle2 className="w-5 h-5 text-[#A4145E]" />
+                      <CheckCircle2 className="w-5 h-5 text-[#DB2777]" />
                     ) : (
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-[#A4145E] transition-colors" />
+                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-[#DB2777] transition-colors" />
                     )}
                   </span>
                 </button>

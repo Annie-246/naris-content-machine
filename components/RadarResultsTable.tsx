@@ -52,7 +52,7 @@ export const RadarResultsTable: React.FC<{ items: RadarContent[] }> = ({ items }
                           href={String(value)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[#A4145E] hover:underline whitespace-nowrap"
+                          className="inline-flex items-center gap-1 text-[#DB2777] hover:underline whitespace-nowrap"
                         >
                           Mở <ExternalLink className="w-3 h-3" />
                         </a>

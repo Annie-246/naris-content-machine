@@ -16,7 +16,7 @@ import {
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 ' +
-  'placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors font-mono';
+  'placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors font-mono';
 
 export const DataSourcePanel: React.FC = () => {
   const [keys, setKeys] = useState<Record<string, string>>(() =>
@@ -87,7 +87,7 @@ export const DataSourcePanel: React.FC = () => {
   return (
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex items-center gap-2.5 mb-1.5">
-        <Database className="w-5 h-5 text-[#A4145E]" />
+        <Database className="w-5 h-5 text-[#DB2777]" />
         <h2 className="text-lg font-bold text-slate-900">Nguồn dữ liệu</h2>
       </div>
       <p className="text-sm text-slate-600 leading-relaxed">
@@ -119,7 +119,7 @@ export const DataSourcePanel: React.FC = () => {
                   href={provider.docsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#A4145E] hover:underline shrink-0"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#DB2777] hover:underline shrink-0"
                 >
                   Lấy API key <ExternalLink className="w-3.5 h-3.5" />
                 </a>
@@ -158,7 +158,7 @@ export const DataSourcePanel: React.FC = () => {
                   <button
                     onClick={() => saveShared(provider.id)}
                     disabled={!draft.trim()}
-                    className="shrink-0 px-6 py-3 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium transition-colors"
+                    className="shrink-0 px-6 py-3 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium transition-colors"
                   >
                     Lưu
                   </button>
@@ -179,7 +179,7 @@ export const DataSourcePanel: React.FC = () => {
       <div className="mt-6 pt-5 border-t border-slate-100">
         <button
           onClick={() => setShowAdvanced((v) => !v)}
-          className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-[#A4145E] transition-colors"
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-600 hover:text-[#DB2777] transition-colors"
         >
           <SlidersHorizontal className="w-4 h-4" />
           Tuỳ chỉnh theo từng nền tảng
@@ -206,7 +206,7 @@ export const DataSourcePanel: React.FC = () => {
                           onClick={() => chooseSource(platform.id, choice)}
                           className={`px-4 py-2 rounded-xl border text-[13px] font-semibold transition-colors
                             ${active
-                              ? 'border-[#A4145E] bg-[#FDF2F7] text-[#A4145E]'
+                              ? 'border-[#DB2777] bg-[#FDF2F8] text-[#DB2777]'
                               : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
                         >
                           {label}
@@ -266,7 +266,7 @@ export const DataSourcePanel: React.FC = () => {
                             <button
                               onClick={() => saveOverride(platform.id, source)}
                               disabled={!draft.trim()}
-                              className="shrink-0 px-5 py-2.5 rounded-xl bg-[#A4145E] hover:bg-[#86104D] disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-semibold transition-colors"
+                              className="shrink-0 px-5 py-2.5 rounded-xl bg-[#DB2777] hover:bg-[#BE185D] disabled:bg-slate-200 disabled:text-slate-400 text-white text-[13px] font-semibold transition-colors"
                             >
                               Lưu
                             </button>

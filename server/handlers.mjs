@@ -38,8 +38,11 @@ const bundled = (name) => {
   }) || null;
 };
 
-const YTDLP = process.env.YTDLP_PATH || bundled('yt-dlp.exe') || 'yt-dlp';
-const FFMPEG = process.env.FFMPEG_PATH || bundled('ffmpeg.exe') || 'ffmpeg';
+// Trên macOS và Linux hai công cụ này không có đuôi .exe.
+const EXE_SUFFIX = process.platform === 'win32' ? '.exe' : '';
+
+const YTDLP = process.env.YTDLP_PATH || bundled(`yt-dlp${EXE_SUFFIX}`) || 'yt-dlp';
+const FFMPEG = process.env.FFMPEG_PATH || bundled(`ffmpeg${EXE_SUFFIX}`) || 'ffmpeg';
 const IMPERSONATE = process.env.YTDLP_IMPERSONATE || 'chrome';
 
 const ATTEMPTS = 7;
@@ -320,7 +323,7 @@ const explainYtdlpError = (err) => {
     return `Nền tảng đang chặn yêu cầu tự động (đã thử ${ATTEMPTS} lần đều bị từ chối). Đây là cơ chế chống bot của họ và thường chỉ diễn ra tạm thời - chờ khoảng một phút rồi bấm lại. Nếu lặp lại nhiều lần, chạy: pip install -U "yt-dlp[default,curl-cffi]"`;
   }
   if (err?.code === 'ENOENT') {
-    return 'Không tìm thấy công cụ tải video (yt-dlp) trên máy này. Bản cài Windows đã kèm sẵn công cụ này, nên nếu gặp lỗi thì cài lại app từ trang Releases. Chạy từ mã nguồn thì chạy: node scripts/fetch-vendor.mjs';
+    return 'Không tìm thấy công cụ tải video (yt-dlp) trên máy này. Bản cài sẵn (Windows và macOS) đã kèm công cụ này, nên nếu gặp lỗi thì cài lại app từ trang Releases. Chạy từ mã nguồn thì chạy: node scripts/fetch-vendor.mjs';
   }
   if (/Unexpected response from webpage/i.test(text)) {
     return 'Nền tảng trả về trang kiểm tra bảo mật (WAF challenge) thay vì trang video. Cài thư viện giả lập trình duyệt bằng lệnh: pip install -U "yt-dlp[default,curl-cffi]" rồi thử lại.';

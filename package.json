@@ -10,12 +10,13 @@
     "start": "node server/production.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test services/radar/radar.test.mjs services/zip.test.mjs server/douyinVideo.test.mjs",
+    "test": "node --test services/radar/radar.test.mjs services/zip.test.mjs services/productCatalog.test.mjs server/douyinVideo.test.mjs",
     "app": "npm run build && electron .",
     "app:nobuild": "electron .",
     "dist": "npm run build && electron-builder --win",
     "vendor": "node scripts/fetch-vendor.mjs",
-    "predist": "node scripts/fetch-vendor.mjs"
+    "predist": "node scripts/fetch-vendor.mjs",
+    "dist:mac": "npm run build && electron-builder --mac"
   },
   "dependencies": {
     "@google/genai": "^1.51.0",
@@ -78,6 +79,32 @@
           "**/*"
         ]
       }
-    ]
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Naris Content Machine"
+    }
   }
 }

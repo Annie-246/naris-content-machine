@@ -15,7 +15,7 @@
 // `npm run dist`.
 
 import { createWriteStream, createReadStream } from 'node:fs';
-import { mkdir, stat, rm, rename } from 'node:fs/promises';
+import { mkdir, stat, rm, rename, chmod } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import { createGunzip } from 'node:zlib';
 import { execFile } from 'node:child_process';
@@ -27,7 +27,15 @@ const execFileAsync = promisify(execFile);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const VENDOR = path.join(HERE, '..', 'vendor');
 
-const TOOLS = [
+// Mỗi hệ điều hành một bộ nhị phân riêng: bản đóng gói chạy trên máy người dùng
+// cuối, nơi không có Python và cũng không ai muốn gõ lệnh cài đặt.
+const IS_WINDOWS = process.platform === 'win32';
+const IS_MAC = process.platform === 'darwin';
+
+// Máy Mac hiện có hai loại chip; ffmpeg-static phát hành riêng cho từng loại.
+const MAC_ARCH = process.arch === 'arm64' ? 'arm64' : 'x64';
+
+const WINDOWS_TOOLS = [
   {
     name: 'yt-dlp.exe',
     url: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
@@ -45,6 +53,26 @@ const TOOLS = [
     versionArgs: ['-version'],
   },
 ];
+
+const MAC_TOOLS = [
+  {
+    name: 'yt-dlp',
+    // Bản macOS của yt-dlp là universal binary, chạy cả Intel lẫn Apple Silicon.
+    url: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos',
+    gzipped: false,
+    minBytes: 5 * 1024 * 1024,
+    versionArgs: ['--version'],
+  },
+  {
+    name: 'ffmpeg',
+    url: `https://github.com/eugeneware/ffmpeg-static/releases/latest/download/ffmpeg-darwin-${MAC_ARCH}.gz`,
+    gzipped: true,
+    minBytes: 20 * 1024 * 1024,
+    versionArgs: ['-version'],
+  },
+];
+
+const TOOLS = IS_WINDOWS ? WINDOWS_TOOLS : IS_MAC ? MAC_TOOLS : [];
 
 const sizeOf = async (file) => {
   try {
@@ -79,6 +107,7 @@ const fetchTo = async (tool, target) => {
     finalTmp = unzipped;
   }
 
+  if (!IS_WINDOWS) await chmod(finalTmp, 0o755);
   const size = await sizeOf(finalTmp);
   if (size < tool.minBytes) {
     await rm(finalTmp, { force: true });
@@ -91,6 +120,10 @@ const fetchTo = async (tool, target) => {
 };
 
 const main = async () => {
+  if (!TOOLS.length) {
+    console.log(`Chưa có bộ công cụ dựng sẵn cho ${process.platform}. Hãy cài yt-dlp và ffmpeg vào PATH.`);
+    return;
+  }
   await mkdir(VENDOR, { recursive: true });
   const force = process.argv.includes('--force');
 

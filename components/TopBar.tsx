@@ -31,7 +31,7 @@ export const TopBar = ({
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-30 bg-[#A4145E] border-b border-[#86104D]">
+    <header className="sticky top-0 z-30 bg-[#DB2777] border-b border-[#BE185D]">
       <div className="flex items-center justify-between gap-3 px-4 py-3 lg:gap-4 lg:px-10 lg:py-4">
         <button
           onClick={onOpenMenu}
@@ -75,7 +75,7 @@ export const TopBar = ({
                       <span className="block text-xs text-slate-500 truncate">{brand.industry}</span>
                     )}
                   </span>
-                  {brand.id === activeBrand.id && <Check className="w-4 h-4 text-[#A4145E] shrink-0" />}
+                  {brand.id === activeBrand.id && <Check className="w-4 h-4 text-[#DB2777] shrink-0" />}
                 </button>
               ))}
               <button
@@ -85,8 +85,8 @@ export const TopBar = ({
                 }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-t border-slate-100 hover:bg-slate-50 transition-colors"
               >
-                <Plus className="w-4 h-4 text-[#A4145E] shrink-0" />
-                <span className="text-sm font-medium text-[#A4145E]">Thêm thương hiệu mới</span>
+                <Plus className="w-4 h-4 text-[#DB2777] shrink-0" />
+                <span className="text-sm font-medium text-[#DB2777]">Thêm thương hiệu mới</span>
               </button>
             </div>
           )}

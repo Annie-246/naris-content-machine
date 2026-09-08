@@ -68,7 +68,7 @@ const Field: React.FC<{ label: string; hint?: string; children: React.ReactNode 
 
 const selectClass =
   'w-full rounded-xl border border-slate-200 bg-white py-2.5 px-3 text-sm text-slate-800 ' +
-  'focus:outline-none focus:border-[#A4145E] transition-colors disabled:bg-slate-50 disabled:text-slate-400';
+  'focus:outline-none focus:border-[#DB2777] transition-colors disabled:bg-slate-50 disabled:text-slate-400';
 
 // ---------------------------------------------------------------------------
 
@@ -468,7 +468,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
               disabled={running}
               className={`shrink-0 px-2.5 rounded-xl border text-[13px] font-semibold transition-colors disabled:opacity-40
                 ${limit === n
-                  ? 'border-[#A4145E] bg-[#FDF2F7] text-[#A4145E]'
+                  ? 'border-[#DB2777] bg-[#FDF2F8] text-[#DB2777]'
                   : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
             >
               {n}
@@ -494,13 +494,13 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
 
   const ctaClass =
     'inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl font-semibold transition-colors ' +
-    'bg-[#A4145E] hover:bg-[#86104D] text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed';
+    'bg-[#DB2777] hover:bg-[#BE185D] text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed';
 
   return (
     <div className="max-w-[1080px]">
       <div className="flex items-start gap-5">
-        <div className="w-[68px] h-[68px] rounded-2xl bg-[#FDF2F7] border border-[#f8d3e0] flex items-center justify-center shrink-0">
-          <Radar className="w-9 h-9 text-[#A4145E]" strokeWidth={1.5} />
+        <div className="w-[68px] h-[68px] rounded-2xl bg-[#FDF2F8] border border-[#fbcfe8] flex items-center justify-center shrink-0">
+          <Radar className="w-9 h-9 text-[#DB2777]" strokeWidth={1.5} />
         </div>
         <div>
           <h1 className="text-[34px] leading-tight font-bold text-slate-900">Content Radar</h1>
@@ -520,9 +520,9 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
               onClick={() => switchMode(id)}
               disabled={running}
               className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60
-                ${active ? 'bg-white border border-[#A4145E] text-[#A4145E] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                ${active ? 'bg-white border border-[#DB2777] text-[#DB2777] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              <Icon className={`w-4 h-4 ${active ? 'text-[#A4145E]' : 'text-slate-400'}`} />
+              <Icon className={`w-4 h-4 ${active ? 'text-[#DB2777]' : 'text-slate-400'}`} />
               {label}
             </button>
           );
@@ -542,7 +542,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                 disabled={running}
                 className={`px-3 py-1.5 rounded-lg border text-[12px] font-semibold transition-colors disabled:opacity-50
                   ${active
-                    ? 'bg-[#FDF2F7] border-[#f8d3e0] text-[#A4145E]'
+                    ? 'bg-[#FDF2F8] border-[#fbcfe8] text-[#DB2777]'
                     : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
               >
                 {p.label}
@@ -560,18 +560,18 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
               <div className="flex gap-2.5 flex-wrap">
                 <div
                   className={`flex-1 min-w-[240px] flex flex-wrap items-center gap-2 rounded-xl border bg-white py-2 px-2.5 transition-colors
-                    ${running ? 'border-slate-200 bg-slate-50' : 'border-slate-200 focus-within:border-[#A4145E]'}`}
+                    ${running ? 'border-slate-200 bg-slate-50' : 'border-slate-200 focus-within:border-[#DB2777]'}`}
                 >
                   {keywords.map((kw) => (
                     <span
                       key={kw}
-                      className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-lg bg-[#FDF2F7] border border-[#f8d3e0] text-[14px] font-medium text-[#A4145E]"
+                      className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-lg bg-[#FDF2F8] border border-[#fbcfe8] text-[14px] font-medium text-[#DB2777]"
                     >
                       {kw}
                       <button
                         onClick={() => removeKeyword(kw)}
                         disabled={running}
-                        className="text-[#A4145E]/60 hover:text-[#A4145E] disabled:opacity-40"
+                        className="text-[#DB2777]/60 hover:text-[#DB2777] disabled:opacity-40"
                         title="Bỏ từ khoá này"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -606,7 +606,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                   onClick={runSuggest}
                   disabled={suggesting || running || !suggestSeed}
                   title="Nhờ AI gợi ý từ khoá tiếng Trung sát với chủ đề này"
-                  className="shrink-0 self-start inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-colors"
+                  className="shrink-0 self-start inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:text-slate-700 transition-colors"
                 >
                   {suggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                   {suggesting ? 'Đang nghĩ…' : 'AI gợi ý từ khoá'}
@@ -619,7 +619,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
             )}
 
             {suggestions && suggestions.length > 0 && (
-              <div className="-mt-2 rounded-xl border border-[#f0c9d8] bg-[#fef7f8] p-4">
+              <div className="-mt-2 rounded-xl border border-[#fbcfe8] bg-[#fdf2f8] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-[13px] font-semibold text-slate-700">
                     Bấm để chọn từ khoá, chọn được nhiều
@@ -671,12 +671,12 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                                 title={s.why || (full ? `Đã đủ ${MAX_KEYWORDS} từ khoá` : picked ? 'Bỏ chọn' : 'Thêm vào danh sách')}
                                 className={`group px-3.5 py-2 rounded-xl border text-left transition-colors disabled:opacity-40 max-w-[300px]
                                   ${picked
-                                    ? 'border-[#A4145E] bg-[#FDF2F7]'
-                                    : 'border-slate-200 bg-white hover:border-[#A4145E]'}`}
+                                    ? 'border-[#DB2777] bg-[#FDF2F8]'
+                                    : 'border-slate-200 bg-white hover:border-[#DB2777]'}`}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  {picked && <Check className="w-3.5 h-3.5 text-[#A4145E] shrink-0" />}
-                                  <span className={`text-[14px] font-semibold truncate ${picked ? 'text-[#A4145E]' : 'text-slate-900 group-hover:text-[#A4145E]'}`}>
+                                  {picked && <Check className="w-3.5 h-3.5 text-[#DB2777] shrink-0" />}
+                                  <span className={`text-[14px] font-semibold truncate ${picked ? 'text-[#DB2777]' : 'text-slate-900 group-hover:text-[#DB2777]'}`}>
                                     {s.keyword}
                                   </span>
                                 </span>
@@ -710,11 +710,11 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
         ) : (
           <>
             {selectedCreator ? (
-              <div className="rounded-xl border border-[#f0c9d8] bg-[#fef7f8] p-4 flex items-center gap-3">
+              <div className="rounded-xl border border-[#fbcfe8] bg-[#fdf2f8] p-4 flex items-center gap-3">
                 {selectedCreator.avatarUrl ? (
                   <img src={selectedCreator.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover shrink-0" />
                 ) : (
-                  <span className="w-10 h-10 rounded-full bg-white border border-[#f8d3e0] shrink-0" />
+                  <span className="w-10 h-10 rounded-full bg-white border border-[#fbcfe8] shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-bold text-slate-900 truncate">
@@ -727,7 +727,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                 <button
                   onClick={resetCompetitor}
                   disabled={running}
-                  className="shrink-0 inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-[#A4145E] transition-colors disabled:opacity-50"
+                  className="shrink-0 inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-[#DB2777] transition-colors disabled:opacity-50"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Đổi đối thủ
                 </button>
@@ -740,7 +740,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                   onKeyDown={(e) => { if (e.key === 'Enter') runCreatorLookup(); }}
                   placeholder={COMPETITOR_PLACEHOLDER[platform]}
                   disabled={running}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors disabled:bg-slate-50"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors disabled:bg-slate-50"
                 />
               </Field>
             )}
@@ -759,7 +759,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                         disabled={running}
                         title={m.hint}
                         className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-colors disabled:opacity-50
-                          ${active ? 'bg-white border border-[#A4145E] text-[#A4145E] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                          ${active ? 'bg-white border border-[#DB2777] text-[#DB2777] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                       >
                         {m.label}
                       </button>
@@ -777,14 +777,14 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                           onKeyDown={(e) => { if (e.key === 'Enter') runCreatorScan(); }}
                           placeholder="VD: kịch bản · ý tưởng · chốt đơn"
                           disabled={running}
-                          className="flex-1 rounded-xl border border-slate-200 bg-white py-3 px-4 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#A4145E] transition-colors disabled:bg-slate-50"
+                          className="flex-1 rounded-xl border border-slate-200 bg-white py-3 px-4 text-[15px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#DB2777] transition-colors disabled:bg-slate-50"
                         />
                         {/* Costs an LLM call, not a provider run. */}
                         <button
                           onClick={runCreatorSuggest}
                           disabled={creatorSuggesting || running}
                           title="Nhờ AI gợi ý từ khoá hợp với nội dung của đối thủ này"
-                          className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] disabled:opacity-40 transition-colors"
+                          className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-[14px] font-semibold text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] disabled:opacity-40 transition-colors"
                         >
                           {creatorSuggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
                           {creatorSuggesting ? 'Đang nghĩ…' : 'AI gợi ý từ khoá'}
@@ -797,7 +797,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                     )}
 
                     {creatorSuggestions && creatorSuggestions.length > 0 && (
-                      <div className="rounded-xl border border-[#f0c9d8] bg-[#fef7f8] p-4">
+                      <div className="rounded-xl border border-[#fbcfe8] bg-[#fdf2f8] p-4">
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-[13px] font-semibold text-slate-700">
                             Bấm để chọn một từ khoá
@@ -827,11 +827,11 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                                 disabled={running}
                                 title={s.why || 'Dùng từ khoá này'}
                                 className={`group px-3.5 py-2 rounded-xl border text-left transition-colors disabled:opacity-40 max-w-[300px]
-                                  ${picked ? 'border-[#A4145E] bg-[#FDF2F7]' : 'border-slate-200 bg-white hover:border-[#A4145E]'}`}
+                                  ${picked ? 'border-[#DB2777] bg-[#FDF2F8]' : 'border-slate-200 bg-white hover:border-[#DB2777]'}`}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  {picked && <Check className="w-3.5 h-3.5 text-[#A4145E] shrink-0" />}
-                                  <span className={`text-[14px] font-semibold truncate ${picked ? 'text-[#A4145E]' : 'text-slate-900 group-hover:text-[#A4145E]'}`}>
+                                  {picked && <Check className="w-3.5 h-3.5 text-[#DB2777] shrink-0" />}
+                                  <span className={`text-[14px] font-semibold truncate ${picked ? 'text-[#DB2777]' : 'text-slate-900 group-hover:text-[#DB2777]'}`}>
                                     {s.keyword}
                                   </span>
                                 </span>
@@ -938,7 +938,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                     <button
                       key={c.ref}
                       onClick={() => setSelectedCreator(c)}
-                      className="text-left rounded-xl border border-slate-200 bg-white p-3 flex items-center gap-3 hover:border-[#A4145E] hover:bg-[#fef7f8] transition-all"
+                      className="text-left rounded-xl border border-slate-200 bg-white p-3 flex items-center gap-3 hover:border-[#DB2777] hover:bg-[#fdf2f8] transition-all"
                     >
                       {c.avatarUrl ? (
                         <img src={c.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -985,7 +985,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
       {/* EMPTY STATE - before the first scan */}
       {!result && !running && !error && (
         <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-10 text-center">
-          <Sparkles className="w-8 h-8 text-[#A4145E] mx-auto" strokeWidth={1.5} />
+          <Sparkles className="w-8 h-8 text-[#DB2777] mx-auto" strokeWidth={1.5} />
           <p className="mt-3.5 text-[17px] font-bold text-slate-900">
             Tìm những nội dung đang hoạt động tốt trên mạng xã hội
           </p>
@@ -998,7 +998,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                   key={example}
                   // Fills the input only - the user still decides when to spend a scan.
                   onClick={() => addKeyword(example)}
-                  className="px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-[13px] text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] transition-colors"
+                  className="px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-[13px] text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] transition-colors"
                 >
                   {example}
                 </button>
@@ -1163,7 +1163,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                         key={id}
                         onClick={() => setView(id)}
                         className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-colors
-                          ${active ? 'bg-white border border-[#A4145E] text-[#A4145E] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                          ${active ? 'bg-white border border-[#DB2777] text-[#DB2777] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                       >
                         <Icon className="w-3.5 h-3.5" />
                         {label}
@@ -1176,7 +1176,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                   <button
                     onClick={downloadCsv}
                     disabled={!!exporting}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] disabled:opacity-40 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] disabled:opacity-40 transition-colors"
                   >
                     {exporting === 'csv' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     Tải CSV
@@ -1186,7 +1186,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                     onClick={exportSheet}
                     disabled={!!exporting}
                     title="Tạo một Google Sheet mới trong Drive của bạn"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 hover:border-[#A4145E] hover:text-[#A4145E] disabled:opacity-40 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 hover:border-[#DB2777] hover:text-[#DB2777] disabled:opacity-40 transition-colors"
                   >
                     {exporting === 'sheet' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
                     {exporting === 'sheet' ? 'Đang tạo…' : 'Xuất Google Sheet'}
@@ -1205,7 +1205,7 @@ export const ContentRadar: React.FC<{ brand?: BrandProfile | null }> = ({ brand 
                           href={sheetUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-semibold text-[#A4145E] hover:underline"
+                          className="inline-flex items-center gap-1 font-semibold text-[#DB2777] hover:underline"
                         >
                           Mở bảng tính <ExternalLink className="w-3.5 h-3.5" />
                         </a>

@@ -10,6 +10,8 @@ import {
 import { analyzeContent, fileToGenerativePart } from '../services/geminiService';
 import { loadLinkSource } from '../services/sourceLoader';
 import { Button, FileDropzone } from './UiComponents';
+import { ProductPicker } from './ProductPicker';
+import { brandWithSelectedProducts } from '../services/productCatalog';
 import { SectionCard, WorkflowStepper, RunStatus } from './WorkspaceShell';
 import { exportToExcelCsv, openInGoogleSheets } from '../src/utils/exportUtils';
 import { recordAndBackup } from '../services/historyBackup';
@@ -40,6 +42,7 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
 
   const [ideaCount, setIdeaCount] = useState(15);
   const [objective, setObjective] = useState<WaterfallObjective>('auto');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [channels, setChannels] = useState('');
   const [instructions, setInstructions] = useState('');
 
@@ -188,7 +191,7 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
         sourceText,
         fileData?.sourceText,
         fileData?.url,
-        brand,
+        brandWithSelectedProducts(brand, selectedProductIds),
         instructions,
         undefined,
         fileData?.fileUri,
@@ -254,7 +257,7 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
     <div className="max-w-[880px] space-y-7">
       <div>
         <div className="flex items-center gap-3">
-          <span className="w-11 h-11 rounded-2xl bg-[#FDF2F7] border border-pink-200 flex items-center justify-center text-[#A4145E]">
+          <span className="w-11 h-11 rounded-2xl bg-[#FDF2F8] border border-pink-200 flex items-center justify-center text-[#DB2777]">
             <Waves className="w-5 h-5" />
           </span>
           <h1 className="text-[34px] leading-tight font-bold text-slate-900">Content Waterfall</h1>
@@ -277,14 +280,14 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
             <div className="space-y-2">
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A4145E]" />
+                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#DB2777]" />
                   <input
                     type="text"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleUrlFetch(); } }}
                     placeholder="Dán link bài viết, bài đăng, tin tức hoặc link video TikTok, YouTube, Reels..."
-                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:outline-none focus:border-[#A4145E] transition-colors placeholder:text-slate-400"
+                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-3 text-sm text-slate-800 focus:outline-none focus:border-[#DB2777] transition-colors placeholder:text-slate-400"
                   />
                 </div>
                 <Button
@@ -302,11 +305,11 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
                   type="checkbox"
                   checked={readComments}
                   onChange={(e) => setReadComments(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-[#A4145E] cursor-pointer"
+                  className="w-3.5 h-3.5 accent-[#DB2777] cursor-pointer"
                 />
                 Đọc cả bình luận trong bài
                 {typeof fileData?.commentCount === 'number' && fileData.commentCount > 0 && (
-                  <span className="text-[#A4145E] font-medium">
+                  <span className="text-[#DB2777] font-medium">
                     · đã đọc {fileData.commentCount} bình luận
                   </span>
                 )}
@@ -326,10 +329,10 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
             {/* Paste text */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <FilePenLine className="w-3.5 h-3.5 text-[#A4145E]" /> Nội dung nguồn (bài viết, transcript, ghi chú, báo cáo...)
+                <FilePenLine className="w-3.5 h-3.5 text-[#DB2777]" /> Nội dung nguồn (bài viết, transcript, ghi chú, báo cáo...)
               </label>
               <textarea
-                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#A4145E] outline-none h-40 resize-none custom-scrollbar placeholder:text-slate-400"
+                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#DB2777] outline-none h-40 resize-none custom-scrollbar placeholder:text-slate-400"
                 placeholder="Dán nội dung nguồn vào đây. Có thể bỏ trống nếu đã dán link, tải file hoặc dán ảnh chụp."
                 value={sourceText}
                 onChange={(e) => setSourceText(e.target.value)}
@@ -339,7 +342,7 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
             {/* Screenshots */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <FileImage className="w-3.5 h-3.5 text-[#A4145E]" /> Ảnh chụp nguồn (chọn được nhiều ảnh)
+                <FileImage className="w-3.5 h-3.5 text-[#DB2777]" /> Ảnh chụp nguồn (chọn được nhiều ảnh)
               </label>
               <div className="relative border border-dashed border-pink-300 rounded-xl p-4 bg-pink-50/40 hover:bg-pink-50/70 transition-colors text-center">
                 <input
@@ -356,10 +359,10 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
 
               <div
                 tabIndex={0}
-                className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-3 text-center cursor-text transition-colors outline-none focus:border-[#A4145E] focus:bg-[#FDF2F7] hover:border-slate-400"
+                className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-3 text-center cursor-text transition-colors outline-none focus:border-[#DB2777] focus:bg-[#FDF2F8] hover:border-slate-400"
               >
                 <div className="flex items-center justify-center gap-2 text-slate-600">
-                  <ClipboardPaste className="w-4 h-4 text-[#A4145E]" />
+                  <ClipboardPaste className="w-4 h-4 text-[#DB2777]" />
                   <span className="text-xs font-semibold">Hoặc bấm vào ô này rồi Ctrl+V để dán ảnh</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">Chụp màn hình xong dán thẳng vào, không cần lưu thành file</p>
@@ -459,12 +462,12 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Waves className="w-3.5 h-3.5 text-[#A4145E]" /> Số ý tưởng tối đa
+                <Waves className="w-3.5 h-3.5 text-[#DB2777]" /> Số ý tưởng tối đa
               </label>
               <select
                 value={ideaCount}
                 onChange={(e) => setIdeaCount(Number(e.target.value))}
-                className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#A4145E] outline-none"
+                className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#DB2777] outline-none"
               >
                 {IDEA_COUNTS.map((n) => <option key={n} value={n}>{n} ý tưởng</option>)}
               </select>
@@ -475,12 +478,12 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-[#A4145E]" /> Mục tiêu nội dung
+                <Target className="w-3.5 h-3.5 text-[#DB2777]" /> Mục tiêu nội dung
               </label>
               <select
                 value={objective}
                 onChange={(e) => setObjective(e.target.value as WaterfallObjective)}
-                className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#A4145E] outline-none"
+                className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-xl p-3 focus:border-[#DB2777] outline-none"
               >
                 {(Object.keys(WATERFALL_OBJECTIVE_LABELS) as WaterfallObjective[]).map((o) => (
                   <option key={o} value={o}>{WATERFALL_OBJECTIVE_LABELS[o]}</option>
@@ -491,23 +494,29 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-              <Share2 className="w-3.5 h-3.5 text-[#A4145E]" /> Kênh & định dạng ưu tiên (tùy chọn)
+              <Share2 className="w-3.5 h-3.5 text-[#DB2777]" /> Kênh & định dạng ưu tiên (tùy chọn)
             </label>
             <input
               type="text"
               value={channels}
               onChange={(e) => setChannels(e.target.value)}
               placeholder="VD: TikTok, Facebook, carousel Instagram, newsletter..."
-              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:border-[#A4145E] outline-none placeholder:text-slate-400"
+              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:border-[#DB2777] outline-none placeholder:text-slate-400"
             />
           </div>
 
+          <ProductPicker
+            products={brand.products || []}
+            selectedIds={selectedProductIds}
+            onChange={setSelectedProductIds}
+          />
+
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-              <FilePenLine className="w-3.5 h-3.5 text-[#A4145E]" /> Yêu cầu bổ sung (tùy chọn)
+              <FilePenLine className="w-3.5 h-3.5 text-[#DB2777]" /> Yêu cầu bổ sung (tùy chọn)
             </label>
             <textarea
-              className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#A4145E] outline-none h-24 resize-none custom-scrollbar placeholder:text-slate-400"
+              className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-800 focus:border-[#DB2777] outline-none h-24 resize-none custom-scrollbar placeholder:text-slate-400"
               placeholder="VD: Tránh chủ đề giảm giá, ưu tiên góc dành cho người mới, không nhắc tới đối thủ..."
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
@@ -565,7 +574,7 @@ export const ContentWaterfall: React.FC<{ brand: BrandProfile }> = ({ brand }) =
               </button>
               <button
                 onClick={handleCopy}
-                className="text-xs flex items-center gap-1.5 text-white bg-[#A4145E] hover:bg-[#86104D] px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                className="text-xs flex items-center gap-1.5 text-white bg-[#DB2777] hover:bg-[#BE185D] px-3 py-1.5 rounded-lg font-semibold transition-colors"
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Đã copy' : 'Copy'}
