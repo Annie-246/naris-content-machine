@@ -37,8 +37,16 @@ không cần cài Node.js.
 2. **Mở lần đầu**: app chưa mua chữ ký số nên cả hai hệ điều hành đều cảnh báo một lần.
 
    - **Windows**: hiện "Windows protected your PC" → bấm *More info* → *Run anyway*. Bản Setup thì *Next* → *Install*.
-   - **macOS**: mở file `.dmg`, kéo app vào thư mục Applications, rồi **chuột phải vào app → Open → Open**.
-     Bấm đúp như bình thường sẽ bị macOS chặn với thông báo app không xác định được nhà phát triển.
+   - **macOS**: mở file `.dmg`, kéo app vào thư mục Applications. Mở lần đầu sẽ hiện
+     *"Apple could not verify..."* — đó là vì app chưa công chứng với Apple, không phải app hỏng. Cách bỏ chặn:
+
+     | Cách | Làm gì |
+     |---|---|
+     | Nhanh nhất, mọi phiên bản macOS | Mở Terminal, dán `xattr -dr com.apple.quarantine "/Applications/Naris Content Machine.app"` rồi Enter, sau đó mở app bình thường |
+     | Không cần Terminal | Bấm mở app cho nó báo lỗi, rồi vào  → *System Settings* → *Privacy & Security*, cuộn xuống mục Security bấm **Open Anyway** |
+
+     Mẹo *chuột phải → Open* chỉ còn tác dụng tới macOS 14; **macOS 15 (Sequoia) đã bỏ đường tắt này**,
+     phải dùng một trong hai cách trên.
 3. **API key**: lấy key Gemini miễn phí tại https://aistudio.google.com/apikey, vào mục **Tích hợp** ở menu trái,
    dán vào ô Google Gemini rồi *Lưu*. Key chỉ lưu trên máy bạn.
 4. **Content Radar và video Douyin**: dán thêm API key [TikHub](https://user.tikhub.io/dashboard/api) ở mục
@@ -112,8 +120,13 @@ git push origin v1.0.1
 ```
 
 Workflow chạy test, build, tải `yt-dlp` + `ffmpeg` đúng hệ điều hành, đóng gói rồi đính kèm file vào
-trang Releases. App chưa ký chữ ký số (cần tài khoản Apple Developer 99$/năm cho macOS), nên người dùng
-phải bỏ qua cảnh báo một lần ở lần mở đầu tiên.
+trang Releases.
+
+**Về chữ ký số**: bản macOS được ký ad-hoc (`identity: "-"`) — đủ để app chạy trên Apple Silicon, nơi
+macOS từ chối hẳn app không có chữ ký. Nhưng ad-hoc không phải công chứng: muốn hết cảnh báo Gatekeeper
+thì cần tài khoản Apple Developer (99\$/năm) để ký bằng Developer ID rồi notarize. Chừng nào chưa có,
+người dùng phải bỏ chặn một lần theo hướng dẫn ở phần tải app. Bản Windows cũng tương tự, chưa mua
+chứng chỉ ký mã nên hiện cảnh báo SmartScreen một lần.
 
 ## Biến môi trường
 

@@ -84,6 +84,16 @@ jobs:
             - **Windows**: `Naris.Content.Machine.Setup.<phiên bản>.exe` (bản cài) hoặc `Naris.Content.Machine.<phiên bản>.exe` (chạy ngay).
               Windows báo "Windows protected your PC" thì bấm *More info* → *Run anyway*.
             - **macOS**: `.dmg` — máy chip Apple (M1/M2/M3...) tải bản `arm64`, máy Intel tải bản `x64`.
-              Mở lần đầu phải **chuột phải vào app → Open → Open**, vì app chưa mua chứng chỉ Apple.
+
+            ### macOS báo "Apple could not verify"
+
+            App chưa công chứng với Apple nên bị chặn lần đầu. App không hỏng, bỏ chặn bằng một trong hai cách:
+
+            1. Mở Terminal, dán dòng này rồi Enter:
+               `xattr -dr com.apple.quarantine "/Applications/Naris Content Machine.app"`
+            2. Hoặc bấm mở app cho báo lỗi, rồi vào  → System Settings → Privacy & Security,
+               cuộn xuống mục Security bấm **Open Anyway**.
+
+            Cách "chuột phải → Open" không còn dùng được trên macOS 15 (Sequoia).
 
             Sau khi mở app, vào mục **Tích hợp** dán API key Gemini (lấy miễn phí tại https://aistudio.google.com/apikey).
