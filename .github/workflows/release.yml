@@ -65,7 +65,6 @@ jobs:
           path: |
             release/*.exe
             release/*.dmg
-            release/*.zip
           if-no-files-found: error
 
       - name: Đưa lên Releases
@@ -75,13 +74,12 @@ jobs:
           files: |
             release/*.exe
             release/*.dmg
-            release/*.zip
           draft: false
           generate_release_notes: true
           body: |
             ## Tải về
 
-            - **Windows**: `Naris.Content.Machine.Setup.<phiên bản>.exe` (bản cài) hoặc `Naris.Content.Machine.<phiên bản>.exe` (chạy ngay).
+            - **Windows**: `Naris.Content.Machine.Setup.<phiên bản>.exe`.
               Windows báo "Windows protected your PC" thì bấm *More info* → *Run anyway*.
             - **macOS**: `.dmg` — máy chip Apple (M1/M2/M3...) tải bản `arm64`, máy Intel tải bản `x64`.
 

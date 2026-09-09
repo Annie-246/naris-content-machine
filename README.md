@@ -27,7 +27,7 @@ không cần cài Node.js.
 
    | Máy | File cần tải |
    |---|---|
-   | Windows | `Naris.Content.Machine.Setup.<phiên bản>.exe` (bản cài, có shortcut) hoặc `Naris.Content.Machine.<phiên bản>.exe` (chạy ngay) |
+   | Windows | `Naris.Content.Machine.Setup.<phiên bản>.exe` |
    | Mac chip Apple (M1/M2/M3/M4) | File `.dmg` có `arm64` trong tên |
    | Mac chip Intel | File `.dmg` có `x64` trong tên |
 
@@ -108,7 +108,7 @@ npm run dist      # bản Windows: tự chạy npm run vendor rồi electron-bui
 npm run dist:mac  # bản macOS - chỉ chạy được TRÊN máy macOS
 ```
 
-Kết quả nằm trong `release/`.
+Kết quả nằm trong `release/`: một file cài cho Windows, và hai file `.dmg` cho macOS (Intel và Apple Silicon).
 
 **Bản macOS không dựng được từ Windows**: electron-builder cần chính macOS để tạo `.dmg`. Vì vậy
 [.github/workflows/release.yml](.github/workflows/release.yml) dựng cả hai bản trên máy của GitHub - đẩy một
