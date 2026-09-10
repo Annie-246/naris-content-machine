@@ -185,15 +185,24 @@ export const parseProductFile = (text: string, fileName = ''): BrandProduct[] =>
   return products;
 };
 
-/** Ghép danh mục mới vào danh mục cũ, trùng tên thì bản mới đè lên. */
+/**
+ * Khoá nhận dạng một sản phẩm khi ghép danh mục.
+ *
+ * Không thể chỉ dùng tên: catalogue mỹ phẩm đặt tên theo công dụng, nên cùng một
+ * hãng có "Lotion Nước dưỡng da đa năng" ở nhiều dòng sản phẩm khác nhau, mỗi
+ * cái một bộ thành phần và một mức giá. Gộp chúng làm một là xoá mất hàng thật.
+ */
+const productKey = (p: BrandProduct): string => `${deaccent(p.line || '')}::${deaccent(p.name)}`;
+
+/** Ghép danh mục mới vào danh mục cũ; cùng dòng và cùng tên thì bản mới đè lên. */
 export const mergeProducts = (current: BrandProduct[], incoming: BrandProduct[]): BrandProduct[] => {
-  const byName = new Map(current.map((p) => [deaccent(p.name), p]));
+  const byKey = new Map(current.map((p) => [productKey(p), p]));
   for (const p of incoming) {
-    const key = deaccent(p.name);
-    const old = byName.get(key);
-    byName.set(key, old ? { ...p, id: old.id } : p);
+    const key = productKey(p);
+    const old = byKey.get(key);
+    byKey.set(key, old ? { ...p, id: old.id } : p);
   }
-  return [...byName.values()];
+  return [...byKey.values()];
 };
 
 /**

@@ -172,6 +172,7 @@ Mục **14. Danh Mục Sản Phẩm** trong hộp thoại Brand DNA nhận file 
 | `.csv` / `.tsv` | Xuất từ Excel hoặc Google Sheet (*File → Download → CSV*). Dòng đầu là tên cột, cần có cột tên sản phẩm |
 | `.json` | File do chính app này xuất ra, dùng khi chuyển sang máy khác |
 | `.txt` / `.md` | Mỗi sản phẩm một khối, cách nhau bằng dòng trống, dòng đầu là tên |
+| `.pdf` / ảnh | Catalogue, bảng giá, ảnh chụp trang sản phẩm — AI đọc rồi tự điền vào danh mục. Cần API key Gemini |
 
 Cột nào cũng được giữ lại kèm tên cột, nên bảng có dung tích, giá, thành phần, đối tượng phù hợp thì AI
 đọc được hết. Tải lại đúng file đó lần nữa thì sản phẩm trùng tên được cập nhật chứ không nhân đôi.

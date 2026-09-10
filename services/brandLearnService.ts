@@ -75,7 +75,7 @@ const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|html?|xml|srt|vtt|log|rtf)$/i;
 export const newSourceId = (): string =>
   `src_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-const fileToBase64 = (file: File): Promise<string> =>
+export const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(String(reader.result).split(',')[1] || '');

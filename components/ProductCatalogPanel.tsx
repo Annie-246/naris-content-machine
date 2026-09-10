@@ -1,10 +1,12 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Package, Upload, Plus, Trash2, Download, Search, ChevronDown, ChevronUp, AlertCircle, Check,
+  Loader2,
 } from 'lucide-react';
 import { BrandProduct } from '../types';
 import { createProductId } from '../data/brandPresets';
 import { mergeProducts, parseProductFile } from '../services/productCatalog';
+import { AI_READABLE, extractProductsFromFile } from '../services/productImport';
 
 /**
  * Danh mục sản phẩm của một thương hiệu, nằm trong hộp thoại Brand DNA.
@@ -18,6 +20,8 @@ export const ProductCatalogPanel: React.FC<{
   onChange: (products: BrandProduct[]) => void;
 }> = ({ products, onChange }) => {
   const [error, setError] = useState('');
+  // Đọc PDF phải chờ model, nên nút bị khoá và có dòng trạng thái riêng.
+  const [reading, setReading] = useState('');
   const [notice, setNotice] = useState('');
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -37,21 +41,45 @@ export const ProductCatalogPanel: React.FC<{
   const handleFile = async (file: File) => {
     setError('');
     setNotice('');
+
+    // PDF và ảnh không tự phân tích được, phải nhờ model đọc; bảng biểu thì
+    // đọc ngay tại chỗ, vừa nhanh vừa không tốn lượt gọi AI.
+    const needsAi = AI_READABLE.test(file.name) || file.type === 'application/pdf' || file.type.startsWith('image/');
+
     try {
-      const parsed = parseProductFile(await file.text(), file.name);
+      let parsed;
+      if (needsAi) {
+        setReading(`Đang đọc "${file.name}" bằng AI...`);
+        parsed = await extractProductsFromFile(file);
+      } else {
+        parsed = parseProductFile(await file.text(), file.name);
+      }
+
       const merged = mergeProducts(products, parsed);
       onChange(merged);
       const added = merged.length - products.length;
+      const updated = parsed.length - added;
       setNotice(
         `Đã đọc ${parsed.length} sản phẩm từ ${file.name}` +
-          (added < parsed.length ? ` (${parsed.length - added} sản phẩm trùng tên đã được cập nhật).` : '.'),
+          (updated > 0 ? ` (${updated} sản phẩm trùng tên đã được cập nhật).` : '.') +
+          (needsAi ? ' Hãy soát lại từng mục trước khi lưu — AI đọc tài liệu rất tốt nhưng không phải lúc nào cũng đúng.' : ''),
       );
+      // Mở sẵn sản phẩm đầu tiên vừa đọc được, để người dùng soát ngay thay vì
+      // tin lời model. Tìm theo tên vì mergeProducts có thể đã cập nhật tại chỗ.
+      if (needsAi && parsed.length) {
+        const first = merged.find((p) => p.name === parsed[0].name);
+        if (first) setOpenId(first.id);
+      }
     } catch (e: any) {
       setError(
-        `${e?.message || 'Không đọc được file.'} ` +
-          'Hỗ trợ file .csv, .tsv, .txt, .json xuất từ Excel hoặc Google Sheet - dòng đầu là tên cột, ' +
-          'cần có cột tên sản phẩm.',
+        needsAi
+          ? (e?.message || 'Không đọc được tài liệu.')
+          : `${e?.message || 'Không đọc được file.'} ` +
+            'Hỗ trợ bảng .csv, .tsv, .txt, .json xuất từ Excel hoặc Google Sheet - dòng đầu là tên cột, ' +
+            'cần có cột tên sản phẩm. Catalogue hoặc bảng giá thì tải lên dạng .pdf, AI sẽ đọc giúp.',
       );
+    } finally {
+      setReading('');
     }
   };
 
@@ -86,8 +114,9 @@ export const ProductCatalogPanel: React.FC<{
             </span>
           </p>
           <p className="text-[11px] text-slate-600 mt-1 max-w-2xl">
-            Tải lên bảng sản phẩm để AI viết đúng tên, công dụng và thông số của từng mã hàng thay vì
-            nói chung chung. Mỗi lần chạy bạn chọn sản phẩm cần nói tới.
+            Tải lên bảng sản phẩm, catalogue PDF hoặc ảnh chụp bảng giá — AI đọc rồi tự điền vào danh mục
+            bên dưới. Nhờ đó bài viết bám đúng tên, công dụng và thông số của từng mã hàng thay vì nói chung
+            chung. Mỗi lần chạy bạn chọn sản phẩm cần nói tới.
           </p>
         </div>
 
@@ -95,7 +124,7 @@ export const ProductCatalogPanel: React.FC<{
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,.tsv,.txt,.json,.md,text/csv,text/plain,application/json"
+            accept=".csv,.tsv,.txt,.json,.md,.pdf,.png,.jpg,.jpeg,.webp,text/csv,text/plain,application/json,application/pdf,image/*"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -106,9 +135,11 @@ export const ProductCatalogPanel: React.FC<{
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="text-xs font-bold text-white bg-pink-600 hover:bg-pink-700 px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors active:scale-95"
+            disabled={!!reading}
+            className="text-xs font-bold text-white bg-pink-600 hover:bg-pink-700 px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Upload className="w-3.5 h-3.5" /> Tải file danh mục
+            {reading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {reading ? 'Đang đọc...' : 'Tải file danh mục'}
           </button>
           <button
             type="button"
@@ -130,6 +161,11 @@ export const ProductCatalogPanel: React.FC<{
         </div>
       </div>
 
+      {reading && (
+        <p className="text-xs text-pink-800 bg-pink-50 border border-pink-200 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 shrink-0 animate-spin" /> {reading} Tài liệu dài có thể mất một phút.
+        </p>
+      )}
       {error && (
         <p className="text-xs text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-px" /> {error}
@@ -143,7 +179,8 @@ export const ProductCatalogPanel: React.FC<{
 
       {products.length === 0 ? (
         <p className="text-xs text-slate-500 bg-white border border-dashed border-pink-200 rounded-lg px-3 py-4 text-center">
-          Chưa có sản phẩm nào. Tải lên file .csv / .xlsx đã lưu thành .csv, hoặc bấm “Thêm tay”.
+          Chưa có sản phẩm nào. Tải lên bảng .csv, catalogue .pdf hoặc ảnh chụp bảng giá — AI sẽ đọc và
+          điền giúp. Hoặc bấm “Thêm tay” để tự nhập.
         </p>
       ) : (
         <>

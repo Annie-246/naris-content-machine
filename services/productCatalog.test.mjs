@@ -92,6 +92,41 @@ test('Tải lại đúng file cũ thì cập nhật chứ không nhân đôi dan
   assert.equal(merged[0].id, current[0].id);
 });
 
+// Catalogue thật của Naris đặt tên sản phẩm theo công dụng, nên cùng một cái tên
+// xuất hiện ở nhiều dòng sản phẩm với giá và thành phần khác hẳn nhau. Gộp chúng
+// theo mỗi cái tên là xoá mất hàng thật khỏi danh mục.
+test('Cùng tên nhưng khác dòng sản phẩm thì giữ riêng, không gộp', () => {
+  const uruoi = catalog.parseProductFile(
+    'Tên sản phẩm,Dòng sản phẩm,Dung tích,Giá\nLotion Nước dưỡng da đa năng,URUOI COLLAGEN,180ml,495000',
+    'a.csv',
+  );
+  const khac = catalog.parseProductFile(
+    'Tên sản phẩm,Dòng sản phẩm,Dung tích,Giá\nLotion Nước dưỡng da đa năng,SKIN CONDITIONER,180ml,350000',
+    'b.csv',
+  );
+
+  const merged = catalog.mergeProducts(uruoi, khac);
+  assert.equal(merged.length, 2, 'hai dòng sản phẩm khác nhau phải nằm riêng');
+  assert.match(merged[0].details, /495000/);
+  assert.match(merged[1].details, /350000/);
+});
+
+test('Cùng tên và cùng dòng sản phẩm thì vẫn cập nhật chứ không nhân đôi', () => {
+  const cu = catalog.parseProductFile(
+    'Tên sản phẩm,Dòng sản phẩm,Giá\nLotion Nước dưỡng da đa năng,URUOI COLLAGEN,495000',
+    'a.csv',
+  );
+  const moi = catalog.parseProductFile(
+    'Tên sản phẩm,Dòng sản phẩm,Giá\nLotion Nước dưỡng da đa năng,URUOI COLLAGEN,520000',
+    'b.csv',
+  );
+
+  const merged = catalog.mergeProducts(cu, moi);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].id, cu[0].id, 'giữ id cũ để lựa chọn trước đó không hỏng');
+  assert.match(merged[0].details, /520000/, 'giá mới phải đè lên giá cũ');
+});
+
 test('Brand chưa có sản phẩm thì không chèn gì vào prompt', () => {
   assert.equal(catalog.formatProductsForPrompt({ name: 'X' }), '');
 });

@@ -1,7 +1,7 @@
 {
   "name": "naris-content-machine",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -10,7 +10,7 @@
     "start": "node server/production.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test services/radar/radar.test.mjs services/zip.test.mjs services/productCatalog.test.mjs server/douyinVideo.test.mjs",
+    "test": "node --test services/radar/radar.test.mjs services/zip.test.mjs services/productCatalog.test.mjs services/productImport.test.mjs server/douyinVideo.test.mjs",
     "app": "npm run build && electron .",
     "app:nobuild": "electron .",
     "dist": "npm run build && electron-builder --win",
